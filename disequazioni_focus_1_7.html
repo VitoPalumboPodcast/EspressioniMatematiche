@@ -358,6 +358,7 @@ function computeSuggestion(){
     if(k!==-1) return {type:'mulInside',payload:{side:sideG,gidx},text:'Trascina il fattore sopra ciascun termine tra parentesi.',hi:[{side:sideG,idx:gidx}],primary:'actApply'};}
   if(state.B.some(t=>t.type==='mono'&&t.x)){const idx=state.B.findIndex(t=>t.type==='mono'&&t.x); return {type:'transport',payload:{from:'B',idx,to:'A'},text:'Sposta una x a sinistra.',hi:[{side:'B',idx}],primary:'actTransport'};}
   if(state.A.some(t=>t.type==='mono'&&!t.x)){const idx=state.A.findIndex(t=>t.type==='mono'&&!t.x); return {type:'transport',payload:{from:'A',idx,to:'B'},text:'Sposta un numero a destra.',hi:[{side:'A',idx}],primary:'actTransport'};}
+  if(isSolved()) return {type:'none',payload:null,text:'Disequazione risolta! Il grafico mostra la soluzione.',hi:[],primary:null};
   const count=(side,isX)=>state[side].filter(t=>t.type==='mono'&&(!!t.x===!!isX)).length;
   if(count('A',true)>=2){const ids=state.A.map((t,i)=>[t,i]).filter(([t])=>t.type==='mono'&&t.x).slice(0,2).map(([,i])=>i); return {type:'sumTwo',payload:{side:'A',idx1:ids[0],idx2:ids[1]},text:'Somma due x a sinistra.',hi:[{side:'A',idx:ids[0]},{side:'A',idx:ids[1]}],primary:'actSum'};}
   if(count('B',false)>=2){const ids=state.B.map((t,i)=>[t,i]).filter(([t])=>t.type==='mono'&&!t.x).slice(0,2).map(([,i])=>i); return {type:'sumTwo',payload:{side:'B',idx1:ids[0],idx2:ids[1]},text:'Somma due numeri a destra.',hi:[{side:'B',idx:ids[0]},{side:'B',idx:ids[1]}],primary:'actSum'};}
