@@ -41,17 +41,32 @@
       margin: 0;
       font-size: 1.6rem;
     }
-    header button {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: #fff;
-      font-size: 1rem;
+    .mode-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 0.5rem 0.9rem;
       border-radius: 999px;
-      padding: 0.55rem 1.25rem;
+      font-size: 1rem;
+    }
+    .mode-switcher label {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .mode-switcher select {
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 0.35rem 2.5rem 0.35rem 0.9rem;
+      font-size: 1rem;
+      background: rgba(255, 255, 255, 0.9);
+      color: #0b2a55;
+      position: relative;
       cursor: pointer;
     }
-    header button:focus-visible {
-      outline: 3px solid #fff;
+    .mode-switcher select:focus-visible {
+      outline: 3px solid rgba(255, 255, 255, 0.7);
       outline-offset: 2px;
     }
     main {
@@ -107,45 +122,6 @@
     }
     .history-entry .step {
       font-weight: 600;
-    }
-    .mode-picker {
-      position: fixed;
-      inset: 0;
-      background: rgba(8, 15, 35, 0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
-    .mode-card {
-      background: #fff;
-      padding: 2.5rem clamp(2rem, 5vw, 4rem);
-      border-radius: 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-      box-shadow: 0 28px 60px rgba(10, 30, 60, 0.3);
-      text-align: center;
-    }
-    .mode-buttons {
-      display: flex;
-      gap: 1rem;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .mode-buttons button {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 0.9rem 1.8rem;
-      border-radius: 18px;
-      font-size: 1.2rem;
-      cursor: pointer;
-      min-width: 230px;
-      box-shadow: 0 12px 25px rgba(26, 115, 232, 0.35);
-    }
-    .mode-buttons button:focus-visible {
-      outline: 4px solid var(--accent-light);
     }
     .equation-display {
       font-size: clamp(1.7rem, 4vw, 2.5rem);
@@ -405,19 +381,15 @@
   </style>
 </head>
 <body>
-  <div class="mode-picker" id="modePicker" role="dialog" aria-modal="true">
-    <div class="mode-card">
-      <h2>Scegli la modalità</h2>
-      <p>Allenati con equazioni o disequazioni lineari con guida passo passo.</p>
-      <div class="mode-buttons">
-        <button data-mode="equation">Equazioni lineari</button>
-        <button data-mode="inequality">Disequazioni lineari</button>
-      </div>
-    </div>
-  </div>
   <header>
     <h1>Allenatore passo-passo</h1>
-    <button id="changeMode">Cambia modalità</button>
+    <div class="mode-switcher">
+      <label for="modeSelect">Modalità</label>
+      <select id="modeSelect" aria-label="Seleziona la modalità di allenamento">
+        <option value="equation">Equazioni lineari</option>
+        <option value="inequality">Disequazioni lineari</option>
+      </select>
+    </div>
   </header>
   <main>
     <section class="board" aria-live="polite">
@@ -427,7 +399,7 @@
         <div class="member" id="memberB" aria-label="Membro destro"></div>
       </div>
       <div class="suggestion-box" id="suggestionBox">
-        <span id="suggestionText">Attiva la modalità per iniziare.</span>
+        <span id="suggestionText">Segui i suggerimenti per risolvere l'esercizio.</span>
         <button id="applySuggestion">Applica mossa suggerita</button>
       </div>
       <div class="controls">
@@ -493,17 +465,12 @@
     let keyboardItems = [];
     let keyboardIndex = 0;
 
-    const modePicker = document.getElementById('modePicker');
-    modePicker.addEventListener('click', (e) => {
-      if (e.target.matches('button[data-mode]')) {
-        startMode(e.target.dataset.mode);
-      }
+    const modeSelect = document.getElementById('modeSelect');
+    modeSelect.addEventListener('change', (event) => {
+      startMode(event.target.value);
     });
 
-    document.getElementById('changeMode').addEventListener('click', () => {
-      modePicker.classList.remove('hidden');
-      modePicker.showModal?.();
-    });
+    startMode('equation');
 
     document.getElementById('newExercise').addEventListener('click', () => {
       if (!state.mode) return;
@@ -551,7 +518,9 @@
     function startMode(mode) {
       state.mode = mode;
       state.op = mode === 'equation' ? '=' : randomOp();
-      modePicker.classList.add('hidden');
+      if (modeSelect.value !== mode) {
+        modeSelect.value = mode;
+      }
       initExercise();
     }
 
