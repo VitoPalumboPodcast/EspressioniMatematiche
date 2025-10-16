@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allenatore Equazioni e Disequazioni</title>
+  <style>
+    :root {
+      --bg: #f7f9fc;
+      --panel: #ffffff;
+      --accent: #1a73e8;
+      --accent-light: rgba(26, 115, 232, 0.15);
+      --accent-strong: rgba(26, 115, 232, 0.45);
+      --danger: #e53935;
+      --success: #2e7d32;
+      font-size: clamp(16px, 1.2vw + 14px, 22px);
+    }
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #111;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 1.25rem clamp(1rem, 2vw, 2.5rem);
+      background: linear-gradient(135deg, #1a73e8, #1976d2);
+      color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.6rem;
+    }
+    header button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      font-size: 1rem;
+      border-radius: 999px;
+      padding: 0.55rem 1.25rem;
+      cursor: pointer;
+    }
+    header button:focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 2px;
+    }
+    main {
+      display: flex;
+      flex: 1;
+      gap: 1.5rem;
+      padding: clamp(1rem, 2vw, 2rem);
+      flex-wrap: wrap;
+    }
+    .board {
+      flex: 2 1 420px;
+      background: var(--panel);
+      border-radius: 18px;
+      padding: clamp(1rem, 1.5vw, 1.75rem);
+      box-shadow: 0 18px 40px rgba(23, 42, 77, 0.12);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+    }
+    .history {
+      flex: 1 1 280px;
+      background: var(--panel);
+      border-radius: 18px;
+      padding: clamp(1rem, 1.5vw, 1.5rem);
+      box-shadow: 0 18px 40px rgba(23, 42, 77, 0.08);
+      display: flex;
+      flex-direction: column;
+    }
+    .history h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+    }
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .history-entry {
+      background: var(--accent-light);
+      border-radius: 12px;
+      padding: 0.6rem 0.75rem;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: border 0.2s;
+    }
+    .history-entry:hover,
+    .history-entry:focus-visible {
+      border-color: var(--accent);
+    }
+    .history-entry .step {
+      font-weight: 600;
+    }
+    .mode-picker {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 15, 35, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .mode-card {
+      background: #fff;
+      padding: 2.5rem clamp(2rem, 5vw, 4rem);
+      border-radius: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      box-shadow: 0 28px 60px rgba(10, 30, 60, 0.3);
+      text-align: center;
+    }
+    .mode-buttons {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .mode-buttons button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 18px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      min-width: 230px;
+      box-shadow: 0 12px 25px rgba(26, 115, 232, 0.35);
+    }
+    .mode-buttons button:focus-visible {
+      outline: 4px solid var(--accent-light);
+    }
+    .equation-display {
+      font-size: clamp(1.7rem, 4vw, 2.5rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.9rem;
+      flex-wrap: wrap;
+      position: relative;
+    }
+    .member {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+      flex-wrap: wrap;
+      min-height: 3.2rem;
+      justify-content: center;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.8);
+      box-shadow: inset 0 0 0 2px rgba(17, 34, 68, 0.05);
+    }
+    .term {
+      padding: 0.45rem 0.7rem;
+      border-radius: 12px;
+      border: 2px solid var(--accent);
+      background: rgba(26, 115, 232, 0.08);
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      position: relative;
+      min-width: 2.6rem;
+      text-align: center;
+    }
+    .term.glow {
+      box-shadow: 0 0 0 5px rgba(46, 125, 50, 0.55);
+    }
+    .term:active {
+      cursor: grabbing;
+    }
+    .term.ghost {
+      animation: ghostMove 0.5s ease;
+    }
+    .term.focused,
+    .factor.focused {
+      outline: 3px solid var(--accent);
+      outline-offset: 2px;
+    }
+    @keyframes ghostMove {
+      from { opacity: 0.25; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .term.invalid {
+      animation: reject 0.45s ease;
+    }
+    @keyframes reject {
+      0% { transform: translateX(0); }
+      30% { transform: translateX(-9px); }
+      60% { transform: translateX(9px); }
+      100% { transform: translateX(0); }
+    }
+    .term.att {
+      opacity: 0.45;
+    }
+    .group-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .factor {
+      padding: 0.45rem 0.7rem;
+      border-radius: 12px;
+      border: 2px dashed var(--accent);
+      background: rgba(26, 115, 232, 0.12);
+      cursor: grab;
+      user-select: none;
+    }
+    .factor.glow {
+      box-shadow: 0 0 0 5px rgba(46, 125, 50, 0.55);
+    }
+    .group-inner {
+      border-radius: 12px;
+      border: 2px dashed rgba(17, 34, 68, 0.18);
+      padding: 0.45rem 0.6rem;
+      display: inline-flex;
+      gap: 0.45rem;
+      align-items: center;
+      min-height: 2.6rem;
+      position: relative;
+    }
+    .product-log {
+      font-size: clamp(1rem, 1.1vw, 1.15rem);
+      color: #1b3a57;
+      margin-top: 0.4rem;
+      text-align: center;
+    }
+    .halo {
+      position: absolute;
+      inset: -8px;
+      border-radius: 16px;
+      border: 3px solid rgba(46, 125, 50, 0.65);
+      animation: haloFade 1.5s forwards;
+    }
+    @keyframes haloFade {
+      0% { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    .controls button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.1rem;
+      border-radius: 14px;
+      font-size: 1rem;
+      cursor: pointer;
+      min-width: 160px;
+    }
+    .controls button.secondary {
+      background: rgba(17, 34, 68, 0.12);
+      color: #143a63;
+    }
+    .suggestion-box {
+      background: rgba(26, 115, 232, 0.08);
+      border-left: 5px solid var(--accent);
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.9rem;
+    }
+    .suggestion-box button {
+      background: var(--success);
+      border: none;
+      padding: 0.55rem 0.9rem;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 0.95rem;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .toast {
+      position: fixed;
+      bottom: 1.4rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--danger);
+      color: #fff;
+      padding: 0.7rem 1.1rem;
+      border-radius: 12px;
+      box-shadow: 0 14px 30px rgba(229, 57, 53, 0.35);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      z-index: 20;
+    }
+    .toast.show {
+      opacity: 1;
+    }
+    .division-flash {
+      animation: flash 0.55s ease;
+    }
+    @keyframes flash {
+      0% { box-shadow: 0 0 0 rgba(46, 125, 50, 0.0); }
+      50% { box-shadow: 0 0 0 12px rgba(46, 125, 50, 0.4); }
+      100% { box-shadow: 0 0 0 rgba(46, 125, 50, 0.0); }
+    }
+    dialog {
+      border: none;
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 25px 50px rgba(14, 32, 60, 0.4);
+    }
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .keypad button {
+      padding: 0.75rem 0.5rem;
+      font-size: 1.1rem;
+      border-radius: 12px;
+      border: 1px solid rgba(17, 34, 68, 0.2);
+      background: rgba(17, 34, 68, 0.07);
+      cursor: pointer;
+    }
+    .final-panel {
+      margin-top: 1rem;
+      background: rgba(46, 125, 50, 0.12);
+      border: 2px solid var(--success);
+      border-radius: 14px;
+      padding: 0.9rem 1.1rem;
+      font-size: 1.1rem;
+      text-align: center;
+    }
+    .number-line {
+      position: relative;
+      height: 4rem;
+      margin-top: 0.75rem;
+    }
+    .number-line::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 10%;
+      right: 10%;
+      height: 4px;
+      background: #143a63;
+      transform: translateY(-50%);
+    }
+    .number-line .point {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      border: 4px solid #143a63;
+    }
+    .number-line .point.open {
+      background: transparent;
+    }
+    .number-line .arrow {
+      position: absolute;
+      top: 50%;
+      width: 0;
+      height: 0;
+      border-top: 10px solid transparent;
+      border-bottom: 10px solid transparent;
+    }
+    .number-line .arrow.right {
+      right: 10%;
+      border-left: 14px solid #143a63;
+    }
+    .number-line .arrow.left {
+      left: 10%;
+      border-right: 14px solid #143a63;
+    }
+    @media (max-width: 900px) {
+      main {
+        flex-direction: column;
+      }
+      .history {
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mode-picker" id="modePicker" role="dialog" aria-modal="true">
+    <div class="mode-card">
+      <h2>Scegli la modalità</h2>
+      <p>Allenati con equazioni o disequazioni lineari con guida passo passo.</p>
+      <div class="mode-buttons">
+        <button data-mode="equation">Equazioni lineari</button>
+        <button data-mode="inequality">Disequazioni lineari</button>
+      </div>
+    </div>
+  </div>
+  <header>
+    <h1>Allenatore passo-passo</h1>
+    <button id="changeMode">Cambia modalità</button>
+  </header>
+  <main>
+    <section class="board" aria-live="polite">
+      <div class="equation-display">
+        <div class="member" id="memberA" aria-label="Membro sinistro"></div>
+        <div class="operator" id="operator" aria-live="polite">=</div>
+        <div class="member" id="memberB" aria-label="Membro destro"></div>
+      </div>
+      <div class="suggestion-box" id="suggestionBox">
+        <span id="suggestionText">Attiva la modalità per iniziare.</span>
+        <button id="applySuggestion">Applica mossa suggerita</button>
+      </div>
+      <div class="controls">
+        <button id="newExercise">Nuovo esercizio</button>
+        <button id="divideButton" class="hidden">Dividi per k</button>
+        <button id="undoBtn" class="secondary">Undo</button>
+        <button id="redoBtn" class="secondary">Redo</button>
+      </div>
+      <div class="final-panel hidden" id="finalPanel"></div>
+    </section>
+    <aside class="history">
+      <h2>Passaggi</h2>
+      <div class="history-list" id="historyList"></div>
+    </aside>
+  </main>
+  <div class="toast" id="toast" role="alert"></div>
+  <dialog id="divideDialog">
+    <form method="dialog">
+      <h3>Dividi entrambi i membri</h3>
+      <p>Inserisci il numero k (≠ 0). Puoi usare frazioni p/q o decimali con virgola.</p>
+      <input id="divideInput" type="text" placeholder="k" style="width:100%;padding:0.6rem;font-size:1.05rem;border-radius:10px;border:1px solid #b0bfd3;" />
+      <div class="keypad" aria-hidden="false">
+        <button data-val="1">1</button>
+        <button data-val="2">2</button>
+        <button data-val="3">3</button>
+        <button data-val="4">4</button>
+        <button data-val="5">5</button>
+        <button data-val="6">6</button>
+        <button data-val="7">7</button>
+        <button data-val="8">8</button>
+        <button data-val="9">9</button>
+        <button data-val="-1">-1</button>
+        <button data-val="1/2">1/2</button>
+        <button data-val="1/3">1/3</button>
+      </div>
+      <div style="margin-top:1rem;display:flex;gap:0.75rem;justify-content:flex-end;">
+        <button value="cancel" class="secondary" style="padding:0.55rem 1rem;border-radius:10px;border:1px solid #cfd8e6;">Annulla</button>
+        <button value="confirm" style="padding:0.55rem 1rem;border-radius:10px;background:var(--accent);color:#fff;border:none;">Dividi</button>
+      </div>
+    </form>
+  </dialog>
+  <script>
+    const state = {
+      mode: null,
+      A: [],
+      B: [],
+      op: '=',
+      guided: true,
+      history: [],
+      future: [],
+      suggestion: null,
+      haloShown: new Set(),
+    };
+
+    const memberAEl = document.getElementById('memberA');
+    const memberBEl = document.getElementById('memberB');
+    const operatorEl = document.getElementById('operator');
+    const historyList = document.getElementById('historyList');
+    const toast = document.getElementById('toast');
+    const suggestionText = document.getElementById('suggestionText');
+    const finalPanel = document.getElementById('finalPanel');
+
+    let keyboardItems = [];
+    let keyboardIndex = 0;
+
+    const modePicker = document.getElementById('modePicker');
+    modePicker.addEventListener('click', (e) => {
+      if (e.target.matches('button[data-mode]')) {
+        startMode(e.target.dataset.mode);
+      }
+    });
+
+    document.getElementById('changeMode').addEventListener('click', () => {
+      modePicker.classList.remove('hidden');
+      modePicker.showModal?.();
+    });
+
+    document.getElementById('newExercise').addEventListener('click', () => {
+      if (!state.mode) return;
+      initExercise();
+    });
+
+    document.getElementById('divideButton').addEventListener('click', openDivideDialog);
+    document.getElementById('applySuggestion').addEventListener('click', applySuggestion);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+
+    const divideDialog = document.getElementById('divideDialog');
+    divideDialog.addEventListener('close', () => {
+      if (divideDialog.returnValue === 'confirm') {
+        const val = parseInputToFraction(document.getElementById('divideInput').value.trim());
+        if (!val || val.num === 0) {
+          showToast('Il numero deve essere valido e diverso da zero.');
+          return;
+        }
+        applyDivision(val);
+      }
+      document.getElementById('divideInput').value = '';
+      divideDialog.classList.add('hidden');
+    });
+
+    divideDialog.querySelectorAll('.keypad button').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const input = document.getElementById('divideInput');
+        input.value = btn.dataset.val;
+        input.focus();
+      });
+    });
+
+    function openDivideDialog() {
+      if (!state.mode) return;
+      document.getElementById('divideInput').value = '';
+      if (typeof divideDialog.showModal === 'function') {
+        divideDialog.showModal();
+      } else {
+        divideDialog.classList.remove('hidden');
+      }
+    }
+
+    function startMode(mode) {
+      state.mode = mode;
+      state.op = mode === 'equation' ? '=' : randomOp();
+      modePicker.classList.add('hidden');
+      initExercise();
+    }
+
+    function randomOp() {
+      const ops = ['<', '>', '≤', '≥'];
+      return ops[Math.floor(Math.random() * ops.length)];
+    }
+
+    function initExercise() {
+      finalPanel.classList.add('hidden');
+      state.history = [];
+      state.future = [];
+      state.haloShown.clear();
+      keyboardIndex = 0;
+      const exercise = generateExercise(state.mode);
+      state.A = exercise.A;
+      state.B = exercise.B;
+      state.op = exercise.op;
+      pushSnapshot('Esercizio generato');
+      renderAll();
+    }
+
+    function cloneState() {
+      return {
+        A: JSON.parse(JSON.stringify(state.A)),
+        B: JSON.parse(JSON.stringify(state.B)),
+        op: state.op,
+      };
+    }
+
+    function pushSnapshot(label, info = '') {
+      state.history.push({ snap: cloneState(), label, info });
+      state.future = [];
+      renderHistory();
+    }
+
+    function undo() {
+      if (state.history.length <= 1) return;
+      const last = state.history.pop();
+      state.future.unshift(last);
+      const prev = state.history[state.history.length - 1].snap;
+      state.A = JSON.parse(JSON.stringify(prev.A));
+      state.B = JSON.parse(JSON.stringify(prev.B));
+      state.op = prev.op;
+      renderAll();
+      renderHistory();
+    }
+
+    function redo() {
+      if (!state.future.length) return;
+      const next = state.future.shift();
+      state.history.push({ snap: JSON.parse(JSON.stringify(next.snap)), label: next.label, info: next.info });
+      state.A = JSON.parse(JSON.stringify(next.snap.A));
+      state.B = JSON.parse(JSON.stringify(next.snap.B));
+      state.op = next.snap.op;
+      renderAll();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      historyList.innerHTML = '';
+      state.history.forEach((entry, index) => {
+        const div = document.createElement('button');
+        div.type = 'button';
+        div.className = 'history-entry';
+        div.innerHTML = `<div class="step">${index + 1}. ${entry.label}</div>${entry.info ? `<div class="next">${entry.info}</div>` : ''}`;
+        div.addEventListener('click', () => {
+          state.A = JSON.parse(JSON.stringify(entry.snap.A));
+          state.B = JSON.parse(JSON.stringify(entry.snap.B));
+          state.op = entry.snap.op;
+          state.history = state.history.slice(0, index + 1);
+          renderAll();
+        });
+        historyList.appendChild(div);
+      });
+      historyList.scrollTop = historyList.scrollHeight;
+    }
+
+    function normFrac({ num, den }) {
+      if (den < 0) { num = -num; den = -den; }
+      const g = gcd(Math.abs(num), Math.abs(den));
+      return { num: num / g, den: den / g };
+    }
+    function gcd(a, b) {
+      while (b !== 0) {
+        [a, b] = [b, a % b];
+      }
+      return a || 1;
+    }
+    function lcm(a, b) {
+      return Math.abs(a * b) / gcd(a, b);
+    }
+    function addFrac(a, b) {
+      const den = lcm(a.den, b.den);
+      const num = a.num * (den / a.den) + b.num * (den / b.den);
+      return normFrac({ num, den });
+    }
+    function subFrac(a, b) {
+      return addFrac(a, { num: -b.num, den: b.den });
+    }
+    function mulFrac(a, b) {
+      return normFrac({ num: a.num * b.num, den: a.den * b.den });
+    }
+    function divFrac(a, b) {
+      return normFrac({ num: a.num * b.den, den: a.den * b.num });
+    }
+    function fracToString(fr) {
+      if (!fr) return '0';
+      if (fr.den === 1) return `${fr.num}`;
+      return `${fr.num}/${fr.den}`;
+    }
+    function monoToString(m) {
+      const coeff = fracToString(m);
+      if (m.x) {
+        if (m.den === 1 && Math.abs(m.num) === 1) {
+          return m.num === -1 ? '-x' : 'x';
+        }
+        return `${coeff}·x`;
+      }
+      return coeff;
+    }
+
+    function renderMember(sideEl, side, sideName) {
+      sideEl.innerHTML = '';
+      side.forEach((term, idx) => {
+        if (term.type === 'mono') {
+          const span = document.createElement('span');
+          span.className = 'term';
+          span.textContent = monoToString(term);
+          span.draggable = true;
+          span.dataset.side = sideName;
+          span.dataset.index = idx;
+          span.dataset.kind = 'mono';
+          if (term.ghost) {
+            span.classList.add('ghost');
+            delete term.ghost;
+          }
+          sideEl.appendChild(span);
+        } else if (term.type === 'group') {
+          const box = document.createElement('div');
+          box.className = 'group-box';
+          const factor = document.createElement('span');
+          factor.className = 'factor';
+          factor.textContent = monoToString(term.factor);
+          factor.draggable = true;
+          factor.dataset.side = sideName;
+          factor.dataset.index = idx;
+          factor.dataset.kind = 'factor';
+          const innerBox = document.createElement('div');
+          innerBox.className = 'group-inner';
+          innerBox.dataset.side = sideName;
+          innerBox.dataset.index = idx;
+          term.inner.forEach((mono, innerIdx) => {
+            const inner = document.createElement('span');
+            inner.className = 'term';
+            inner.textContent = monoToString(mono);
+            inner.dataset.side = sideName;
+            inner.dataset.index = idx;
+            inner.dataset.inner = innerIdx;
+            inner.dataset.kind = 'inner';
+            if (mono.done) inner.classList.add('att');
+            innerBox.appendChild(inner);
+          });
+          if (!state.haloShown.has(term.id) && term.inner.some(m => !m.done)) {
+            const halo = document.createElement('div');
+            halo.className = 'halo';
+            innerBox.appendChild(halo);
+            state.haloShown.add(term.id);
+            setTimeout(() => {
+              halo.remove();
+            }, 1500);
+          }
+          box.appendChild(factor);
+          box.appendChild(innerBox);
+          sideEl.appendChild(box);
+          if (term.lastProduct) {
+            const log = document.createElement('div');
+            log.className = 'product-log';
+            log.textContent = term.lastProduct;
+            box.appendChild(log);
+          }
+        }
+      });
+    }
+
+    function renderAll(updateSuggestion = true) {
+      renderMember(memberAEl, state.A, 'A');
+      renderMember(memberBEl, state.B, 'B');
+      operatorEl.textContent = state.op;
+      attachDragHandlers();
+      prepareKeyboardNavigation();
+      if (updateSuggestion) computeSuggestion();
+      checkFinalState();
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function attachDragHandlers() {
+      document.querySelectorAll('[draggable=true]').forEach(el => {
+        el.addEventListener('dragstart', dragStart);
+        el.addEventListener('dragend', dragEnd);
+      });
+      document.querySelectorAll('.member, .group-inner, .term').forEach(el => {
+        el.addEventListener('dragover', dragOver);
+        el.addEventListener('drop', drop);
+      });
+    }
+
+    function prepareKeyboardNavigation() {
+      keyboardItems = Array.from(document.querySelectorAll('.term, .factor'));
+      if (keyboardIndex >= keyboardItems.length) keyboardIndex = keyboardItems.length - 1;
+      if (keyboardIndex < 0) keyboardIndex = 0;
+      keyboardItems.forEach((el, idx) => {
+        el.tabIndex = 0;
+        el.addEventListener('focus', () => {
+          keyboardIndex = idx;
+          refreshKeyboardFocus(false);
+        });
+      });
+      refreshKeyboardFocus(false);
+    }
+
+    function refreshKeyboardFocus(focusEl) {
+      keyboardItems.forEach((el, idx) => {
+        const active = idx === keyboardIndex;
+        el.classList.toggle('focused', active);
+        if (active && focusEl) {
+          el.focus({ preventScroll: true });
+        }
+      });
+    }
+
+    let dragData = null;
+    function dragStart(e) {
+      const t = e.target;
+      dragData = {
+        kind: t.dataset.kind,
+        side: t.dataset.side,
+        index: parseInt(t.dataset.index, 10),
+        inner: t.dataset.inner !== undefined ? parseInt(t.dataset.inner, 10) : null,
+      };
+      e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+    }
+    function dragEnd() {
+      dragData = null;
+    }
+    function dragOver(e) {
+      if (!dragData) return;
+      e.preventDefault();
+    }
+    function drop(e) {
+      if (!dragData) return;
+      e.preventDefault();
+      const target = e.target.closest('.term, .member, .group-inner');
+      if (!target) return;
+      if (dragData.kind === 'factor' && target.classList.contains('term') && target.dataset.kind === 'inner') {
+        applyFactorOnce(dragData.side, dragData.index, parseInt(target.dataset.inner, 10));
+        return;
+      }
+      if (dragData.kind === 'factor' && target.classList.contains('group-inner')) {
+        const side = dragData.side === 'A' ? state.A : state.B;
+        const group = side[dragData.index];
+        if (!group) return;
+        const idx = group.inner.findIndex(m => !m.done);
+        if (idx === -1) {
+          showToast('Parentesi già distribuita.');
+        } else {
+          applyFactorOnce(dragData.side, dragData.index, idx);
+        }
+        return;
+      }
+      if (dragData.kind === 'mono' && target.classList.contains('term')) {
+        if (target.dataset.kind === 'inner') {
+          showToast('Trascina sul termine simile o fuori dalla parentesi.');
+          blinkInvalid(target);
+          return;
+        }
+        if (target.dataset.side === dragData.side) {
+          const fromIdx = dragData.index;
+          const toIdx = parseInt(target.dataset.index, 10);
+          doSum(dragData.side, fromIdx, toIdx);
+          return;
+        }
+      }
+      if (dragData.kind === 'mono' && target.classList.contains('member')) {
+        doTransport(dragData.side, dragData.index, target.id === 'memberA' ? 'A' : 'B');
+        return;
+      }
+      if (dragData.kind === 'mono' && target.classList.contains('term') && target.dataset.kind === 'mono') {
+        const targetSide = target.dataset.side;
+        if (targetSide !== dragData.side) {
+          doTransport(dragData.side, dragData.index, targetSide);
+        } else {
+          doSum(dragData.side, dragData.index, parseInt(target.dataset.index, 10));
+        }
+        return;
+      }
+      showToast('Azione non valida.');
+    }
+
+    function blinkInvalid(el) {
+      el.classList.add('invalid');
+      setTimeout(() => el.classList.remove('invalid'), 400);
+    }
+
+    function parseInputToFraction(value) {
+      if (!value) return null;
+      value = value.replace(',', '.');
+      if (/^-?\d+$/.test(value)) {
+        return normFrac({ num: parseInt(value, 10), den: 1 });
+      }
+      if (/^-?\d+\.\d+$/.test(value)) {
+        const num = parseFloat(value);
+        const denPow = Math.pow(10, value.split('.')[1].length);
+        return normFrac({ num: Math.round(num * denPow), den: denPow });
+      }
+      if (/^-?\d+\/\d+$/.test(value)) {
+        const [n, d] = value.split('/').map(Number);
+        if (d === 0) return null;
+        return normFrac({ num: n, den: d });
+      }
+      return null;
+    }
+
+    function applyFactorOnce(sideName, groupIdx, innerIdx) {
+      const side = sideName === 'A' ? state.A : state.B;
+      const group = side[groupIdx];
+      if (!group || group.type !== 'group') return;
+      const innerMono = group.inner[innerIdx];
+      if (!innerMono || innerMono.done) {
+        showToast('Già moltiplicato.');
+        return;
+      }
+      const product = mulFrac(group.factor, innerMono);
+      const resultMono = {
+        type: 'mono',
+        num: product.num,
+        den: product.den,
+        x: innerMono.x
+      };
+      innerMono.done = true;
+      group.lastProduct = `${monoToString(group.factor)} × ${monoToString(innerMono)} = ${monoToString(resultMono)}`;
+      if (!group.products) group.products = [];
+      group.products.push(resultMono);
+      pushSnapshot('Distribuzione', 'Continua a moltiplicare gli altri termini.');
+      renderAll();
+      if (group.inner.every(m => m.done)) {
+        const index = side.indexOf(group);
+        side.splice(index, 1, ...group.products);
+        pushSnapshot('Parentesi aperta', 'Porta le x a sinistra.');
+        renderAll();
+      }
+    }
+
+    function doSum(sideName, idx1, idx2) {
+      if (idx1 === idx2) return;
+      const side = sideName === 'A' ? state.A : state.B;
+      const t1 = side[idx1];
+      const t2 = side[idx2];
+      if (!t1 || !t2 || t1.type !== 'mono' || t2.type !== 'mono') return;
+      if (t1.x !== t2.x) {
+        showToast('Somma solo termini dello stesso tipo.');
+        return;
+      }
+      const sum = addFrac({ num: t1.num, den: t1.den }, { num: t2.num, den: t2.den });
+      const newTerm = { type: 'mono', num: sum.num, den: sum.den, x: t1.x };
+      side.splice(Math.max(idx1, idx2), 1);
+      side.splice(Math.min(idx1, idx2), 1, newTerm);
+      if (newTerm.num === 0) {
+        side.splice(Math.min(idx1, idx2), 1);
+      }
+      pushSnapshot('Somma termini simili', 'Sposta le x a sinistra.');
+      renderAll();
+    }
+
+    function doTransport(fromSideName, idx, toSideName) {
+      if (fromSideName === toSideName) return;
+      const from = fromSideName === 'A' ? state.A : state.B;
+      const to = toSideName === 'A' ? state.A : state.B;
+      const term = from[idx];
+      if (!term || term.type !== 'mono') return;
+      from.splice(idx, 1);
+      const flipped = { type: 'mono', num: -term.num, den: term.den, x: term.x };
+      to.push(flipped);
+      const hint = term.x ? 'Continua a spostare le x a sinistra.' : 'Porta i numeri a destra.';
+      pushSnapshot('Trasporto (cambio segno)', hint);
+      renderAll();
+    }
+
+    function applyDivision(k) {
+      state.A = state.A.map(term => divideTerm(term, k)).filter(Boolean);
+      state.B = state.B.map(term => divideTerm(term, k)).filter(Boolean);
+      if (state.mode === 'inequality' && k.num < 0) {
+        state.op = flipOperator(state.op);
+        showToast('Diviso per numero negativo: il verso si inverte.');
+      }
+      memberAEl.classList.add('division-flash');
+      memberBEl.classList.add('division-flash');
+      setTimeout(() => {
+        memberAEl.classList.remove('division-flash');
+        memberBEl.classList.remove('division-flash');
+      }, 550);
+      pushSnapshot(`Divisione per k = ${fracToString(k)}`, 'Controlla se puoi concludere.');
+      renderAll();
+    }
+
+    function divideTerm(term, k) {
+      if (term.type !== 'mono') return term;
+      const res = divFrac({ num: term.num, den: term.den }, k);
+      if (res.num === 0) return null;
+      return { type: 'mono', num: res.num, den: res.den, x: term.x };
+    }
+
+    function flipOperator(op) {
+      const map = { '<': '>', '>': '<', '≤': '≥', '≥': '≤' };
+      return map[op] || op;
+    }
+
+    function generateExercise(mode) {
+      let attempt = 0;
+      while (attempt < 100) {
+        attempt++;
+        const structure = createStructure();
+        const left = buildSide(structure.left);
+        const right = buildSide(structure.right);
+        if (!validateSides(left, right)) continue;
+        if (sideSignature(left) === sideSignature(right)) continue;
+        const op = mode === 'equation' ? '=' : randomOp();
+        return { A: left, B: right, op };
+      }
+      return { A: [{ type: 'mono', num: 2, den: 1, x: true }], B: [{ type: 'mono', num: 4, den: 1, x: false }], op: mode === 'equation' ? '=' : '>' };
+    }
+
+    function createStructure() {
+      const templates = [
+        { left: { mono: 2, group: Math.random() < 0.4 }, right: { mono: 2, group: Math.random() < 0.4 } },
+        { left: { mono: 3, group: Math.random() < 0.3 }, right: { mono: 1, group: Math.random() < 0.5 } },
+      ];
+      return templates[Math.floor(Math.random() * templates.length)];
+    }
+
+    function randomCoeff() {
+      const choices = [ -9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9 ];
+      return choices[Math.floor(Math.random() * choices.length)];
+    }
+
+    function buildSide({ mono, group }) {
+      const result = [];
+      let xCount = 0;
+      let numCount = 0;
+      for (let i = 0; i < mono; i++) {
+        const placeX = xCount === 0 || (Math.random() < 0.5);
+        const term = { type: 'mono', num: randomCoeff(), den: 1, x: placeX };
+        result.push(term);
+        if (placeX) xCount++; else numCount++;
+      }
+      if (group) {
+        const factor = randomCoeff();
+        const inner = [
+          { type: 'mono', num: randomCoeff(), den: 1, x: true },
+          { type: 'mono', num: randomCoeff(), den: 1, x: false },
+        ];
+        const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'g' + Math.random();
+        result.push({ type: 'group', factor: { num: factor, den: 1 }, inner, id });
+        xCount++;
+        numCount++;
+      }
+      if (xCount === 0) {
+        result.push({ type: 'mono', num: randomCoeff(), den: 1, x: true });
+      }
+      if (numCount === 0) {
+        result.push({ type: 'mono', num: randomCoeff(), den: 1, x: false });
+      }
+      return shuffle(result);
+    }
+
+    function shuffle(arr) {
+      return arr.sort(() => Math.random() - 0.5);
+    }
+
+    function validateSides(left, right) {
+      const hasX = [...left, ...right].some(term => term.type === 'mono' ? term.x : term.inner.some(m => m.x));
+      if (!hasX) return false;
+      const leftHasX = left.some(term => term.type === 'mono' ? term.x : term.inner.some(m => m.x));
+      const rightHasX = right.some(term => term.type === 'mono' ? term.x : term.inner.some(m => m.x));
+      const leftHasNum = left.some(term => term.type === 'mono' ? !term.x : term.inner.some(m => !m.x));
+      const rightHasNum = right.some(term => term.type === 'mono' ? !term.x : term.inner.some(m => !m.x));
+      if (!(leftHasX && leftHasNum && rightHasX && rightHasNum)) return false;
+      const allZeroLeft = left.length === 0 || left.every(term => term.type === 'mono' && term.num === 0);
+      const allZeroRight = right.length === 0 || right.every(term => term.type === 'mono' && term.num === 0);
+      if (allZeroLeft && allZeroRight) return false;
+      return true;
+    }
+
+    function computeSuggestion() {
+      const suggestion = evaluateSuggestion();
+      state.suggestion = suggestion;
+      document.querySelectorAll('.glow').forEach(el => el.classList.remove('glow'));
+      if (!suggestion) {
+        suggestionText.textContent = 'Nessun suggerimento disponibile.';
+        return;
+      }
+      suggestionText.textContent = suggestion.text;
+      suggestion.targets.forEach(t => {
+        const selector = t.kind === 'factor'
+          ? `.factor[data-side="${t.side}"][data-index="${t.index}"]`
+          : `.term[data-side="${t.side}"][data-index="${t.index}"]${t.inner !== undefined ? `[data-inner="${t.inner}"]` : ''}`;
+        const el = document.querySelector(selector);
+        if (el) el.classList.add('glow');
+      });
+      document.getElementById('divideButton').classList.toggle('hidden', suggestion.type !== 'divide');
+    }
+
+    function evaluateSuggestion() {
+      const group = findPendingGroup();
+      if (group) {
+        const { sideName, groupIdx, innerIdx } = group;
+        const innerMono = (sideName === 'A' ? state.A : state.B)[groupIdx].inner[innerIdx];
+        return {
+          type: 'distribute',
+          text: 'Trascina il fattore sui termini in parentesi.',
+          action: () => applyFactorOnce(sideName, groupIdx, innerIdx),
+          targets: [
+            { kind: 'factor', side: sideName, index: groupIdx },
+            { kind: 'inner', side: sideName, index: groupIdx, inner: innerIdx },
+          ],
+        };
+      }
+      if (!allXOnLeft()) {
+        const { sideName, idx } = findXOffLeft();
+        return {
+          type: 'transport-x',
+          text: 'Sposta una x a sinistra.',
+          action: () => doTransport(sideName, idx, 'A'),
+          targets: [ { kind: 'mono', side: sideName, index: idx } ],
+        };
+      }
+      if (!allNumbersOnRight()) {
+        const { sideName, idx } = findNumberOffRight();
+        return {
+          type: 'transport-num',
+          text: 'Porta i numeri a destra.',
+          action: () => doTransport(sideName, idx, 'B'),
+          targets: [ { kind: 'mono', side: sideName, index: idx } ],
+        };
+      }
+      const sum = findSimilarToSum();
+      if (sum) {
+        const { sideName, i1, i2 } = sum;
+        return {
+          type: 'sum',
+          text: 'Somma questi due termini uguali.',
+          action: () => doSum(sideName, i1, i2),
+          targets: [
+            { kind: 'mono', side: sideName, index: i1 },
+            { kind: 'mono', side: sideName, index: i2 }
+          ],
+        };
+      }
+      const coeff = coefficientOfX();
+      if (coeff) {
+        return {
+          type: 'divide',
+          text: 'Dividi per il numero davanti a x.',
+          action: () => applyDivision(coeff),
+          targets: [ { kind: 'mono', side: 'A', index: coeff.index } ],
+        };
+      }
+      if (state.mode === 'inequality') {
+        return {
+          type: 'done',
+          text: 'Forma finale raggiunta.',
+          action: () => {},
+          targets: [],
+        };
+      }
+      return null;
+    }
+
+    function findPendingGroup() {
+      for (const sideName of ['A', 'B']) {
+        const side = sideName === 'A' ? state.A : state.B;
+        for (let i = 0; i < side.length; i++) {
+          const term = side[i];
+          if (term.type === 'group') {
+            const idx = term.inner.findIndex(m => !m.done);
+            if (idx !== -1) {
+              return { sideName, groupIdx: i, innerIdx: idx };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function allXOnLeft() {
+      return state.B.every(t => t.type !== 'mono' || !t.x);
+    }
+
+    function findXOffLeft() {
+      for (let i = 0; i < state.B.length; i++) {
+        if (state.B[i].type === 'mono' && state.B[i].x) {
+          return { sideName: 'B', idx: i };
+        }
+      }
+      return null;
+    }
+
+    function allNumbersOnRight() {
+      return state.A.every(t => t.type !== 'mono' || t.x);
+    }
+
+    function findNumberOffRight() {
+      for (let i = 0; i < state.A.length; i++) {
+        if (state.A[i].type === 'mono' && !state.A[i].x) {
+          return { sideName: 'A', idx: i };
+        }
+      }
+      return null;
+    }
+
+    function findSimilarToSum() {
+      for (const sideName of ['A', 'B']) {
+        const side = sideName === 'A' ? state.A : state.B;
+        for (let i = 0; i < side.length; i++) {
+          const ti = side[i];
+          if (!ti || ti.type !== 'mono') continue;
+          for (let j = i + 1; j < side.length; j++) {
+            const tj = side[j];
+            if (tj && tj.type === 'mono' && tj.x === ti.x) {
+              return { sideName, i1: i, i2: j };
+            }
+          }
+        }
+      }
+      return null;
+    }
+
+    function coefficientOfX() {
+      const xTerms = state.A.filter(t => t.type === 'mono' && t.x);
+      if (xTerms.length !== 1) return null;
+      if (!state.B.length) return null;
+      return { num: xTerms[0].num, den: xTerms[0].den, index: state.A.indexOf(xTerms[0]) };
+    }
+
+    function applySuggestion() {
+      const sug = state.suggestion;
+      if (!sug || !sug.action) return;
+      const targets = sug.targets.map(t => {
+        return t.kind === 'factor'
+          ? document.querySelector(`.factor[data-side="${t.side}"][data-index="${t.index}"]`)
+          : document.querySelector(`.term[data-side="${t.side}"][data-index="${t.index}"]${t.inner !== undefined ? `[data-inner="${t.inner}"]` : ''}`);
+      }).filter(Boolean);
+      targets.forEach(el => {
+        el.classList.add('ghost');
+        setTimeout(() => el.classList.remove('ghost'), 500);
+      });
+      setTimeout(() => {
+        sug.action();
+      }, 420);
+    }
+
+    function checkFinalState() {
+      finalPanel.classList.add('hidden');
+      finalPanel.innerHTML = '';
+      const coeff = coefficientOfX();
+      if (!coeff) return;
+      const numbersRight = state.B.filter(t => t.type === 'mono' && !t.x);
+      if (numbersRight.length !== 1) return;
+      const value = divFrac({ num: numbersRight[0].num, den: numbersRight[0].den }, coeff);
+      if (state.mode === 'equation') {
+        finalPanel.innerHTML = `<strong>x = ${fracToString(value)}</strong><br>Esercizio concluso! Ottimo lavoro.`;
+        finalPanel.classList.remove('hidden');
+      } else {
+        const include = state.op === '≤' || state.op === '≥';
+        const goRight = state.op === '>' || state.op === '≥';
+        const pointPos = goRight ? '70%' : '30%';
+        const interval = goRight
+          ? `${include ? '[' : '('}${fracToString(value)}, +∞)`
+          : `(-∞, ${fracToString(value)}${include ? ']' : ')'}`;
+        finalPanel.innerHTML = `
+          <div><strong>Soluzione:</strong> x ${state.op} ${fracToString(value)}</div>
+          <div class="number-line">
+            <div class="point ${include ? '' : 'open'}" style="left:${pointPos}"></div>
+            <div class="arrow ${goRight ? 'right' : 'left'}"></div>
+          </div>
+          <div>Intervallo: ${interval}</div>
+          <div>Esercizio concluso! Ottimo lavoro.</div>
+        `;
+        finalPanel.classList.remove('hidden');
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        if (keyboardItems.length) {
+          e.preventDefault();
+          keyboardIndex = (keyboardIndex + 1) % keyboardItems.length;
+          refreshKeyboardFocus(true);
+        }
+      }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        if (keyboardItems.length) {
+          e.preventDefault();
+          keyboardIndex = (keyboardIndex - 1 + keyboardItems.length) % keyboardItems.length;
+          refreshKeyboardFocus(true);
+        }
+      }
+      if (e.key === 'Enter') {
+        applySuggestion();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        undo();
+      }
+      if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        redo();
+      }
+    });
+
+    function renderAllNoSuggestion() {
+      renderAll(false);
+    }
+
+    function buildSideString(side) {
+      return side.map(term => {
+        if (term.type === 'mono') return monoToString(term);
+        return `${monoToString(term.factor)}(${term.inner.map(monoToString).join(' + ')})`;
+      }).join(' + ');
+    }
+
+    function sideSignature(side) {
+      return side
+        .map(term => {
+          if (term.type === 'mono') {
+            return `${term.x ? 'x' : 'n'}:${term.num}/${term.den}`;
+          }
+          const innerSig = term.inner.map(m => `${m.x ? 'x' : 'n'}:${m.num}/${m.den}`).sort().join('|');
+          return `g:${term.factor.num}/${term.factor.den}(${innerSig})`;
+        })
+        .sort()
+        .join('||');
+    }
+
+    window.debugState = state;
+  </script>
+</body>
+</html>
