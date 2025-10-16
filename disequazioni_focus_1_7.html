@@ -34,7 +34,13 @@ main{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding:1rem}
 }
 .monomio:active,.group .factor:active{border-color:var(--uiBorderDark)}
 .group{display:inline-flex;align-items:flex-start;gap:.45rem;padding:.35rem .5rem;flex-wrap:nowrap}
-.group .par{font-weight:400;color:#334155}
+.group .par{
+  font-weight:500;
+  color:var(--math);
+  font-size:2rem;
+  line-height:1;
+  align-self:center;
+}
 .groupInner{display:inline-flex;align-items:flex-start;white-space:nowrap;font-variant-numeric:tabular-nums}
 .innerTerm{display:inline-block;transition:opacity .3s}
 .innerTerm.done{opacity:.35}
