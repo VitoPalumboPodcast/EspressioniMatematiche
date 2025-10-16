@@ -974,30 +974,36 @@
       const side = sideName === 'A' ? state.A : state.B;
       const group = side[groupIdx];
       if (!group || group.type !== 'group') return;
-      const innerMono = group.inner[innerIdx];
-      if (!innerMono || innerMono.done) {
-        showToast('Già moltiplicato.');
+      const explicitIndex = Number.isInteger(innerIdx) ? innerIdx : null;
+      const targetIndex = explicitIndex !== null ? explicitIndex : group.inner.findIndex(m => !m.done);
+      if (targetIndex === -1) {
+        showToast('Parentesi già distribuita.');
         return;
       }
+      const innerMono = group.inner[targetIndex];
+      if (!innerMono || innerMono.done) {
+        showToast('Termine già moltiplicato.');
+        return;
+      }
+      const before = { num: innerMono.num, den: innerMono.den, x: innerMono.x };
       const product = mulFrac(group.factor, innerMono);
       const resultMono = {
         type: 'mono',
         num: product.num,
         den: product.den,
-        x: innerMono.x
+        x: innerMono.x,
+        done: true,
       };
-      innerMono.done = true;
-      group.lastProduct = `${monoToString(group.factor)} × ${monoToString(innerMono)} = ${monoToString(resultMono)}`;
-      if (!group.products) group.products = [];
-      group.products.push(resultMono);
-      pushSnapshot('Distribuzione', 'Continua a moltiplicare gli altri termini.');
-      renderAll();
+      group.inner.splice(targetIndex, 1, resultMono);
+      group.lastProduct = `${monoToString(group.factor)} × ${monoToString(before)} = ${monoToString(resultMono)}`;
       if (group.inner.every(m => m.done)) {
-        const index = side.indexOf(group);
-        side.splice(index, 1, ...group.products);
+        const expanded = group.inner.map(m => ({ type: 'mono', num: m.num, den: m.den, x: m.x }));
+        side.splice(groupIdx, 1, ...expanded);
         pushSnapshot('Parentesi aperta', 'Porta le x a sinistra.');
-        renderAll();
+      } else {
+        pushSnapshot('Moltiplicazione: fattore × termine', 'Continua a moltiplicare gli altri termini.');
       }
+      renderAll();
     }
 
     function doSum(sideName, idx1, idx2) {
@@ -1105,8 +1111,8 @@
       if (group) {
         const factor = randomCoeff();
         const inner = [
-          { type: 'mono', num: randomCoeff(), den: 1, x: true },
-          { type: 'mono', num: randomCoeff(), den: 1, x: false },
+          { type: 'mono', num: randomCoeff(), den: 1, x: true, done: false },
+          { type: 'mono', num: randomCoeff(), den: 1, x: false, done: false },
         ];
         const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'g' + Math.random();
         result.push({ type: 'group', factor: { num: factor, den: 1 }, inner, id });
