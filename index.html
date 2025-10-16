@@ -236,6 +236,20 @@
       min-height: 2.6rem;
       position: relative;
     }
+    .group-inner::before,
+    .group-inner::after {
+      font-weight: 600;
+      font-size: 1.05em;
+      color: #0f2745;
+    }
+    .group-inner::before {
+      content: '(';
+      margin-right: 0.25rem;
+    }
+    .group-inner::after {
+      content: ')';
+      margin-left: 0.25rem;
+    }
     .product-log {
       font-size: clamp(1rem, 1.1vw, 1.15rem);
       color: #1b3a57;
@@ -1221,6 +1235,7 @@
     function checkFinalState() {
       finalPanel.classList.add('hidden');
       finalPanel.innerHTML = '';
+      if (state.history.length <= 1) return;
       const coeff = coefficientOfX();
       if (!coeff) return;
       const numbersRight = state.B.filter(t => t.type === 'mono' && !t.x);
