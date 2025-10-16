@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Disequazioni lineari – Focus Assistito 1.7</title>
+<style>
+:root{
+  --bg:#f3f7fd;--card:#fff;--primary:#132b4a;
+  --accent:#2ecc71;--accentDark:#27ae60;--pulse:#ffb300;--outline:#0ea5e9;
+  --uiBorder:#2563eb; --uiBg:#eef2ff; --uiBorderDark:#1e40af;
+  --math:#0f172a; --ok:#16a34a; --warn:#f59e0b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--primary)}
+main{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding:1rem}
+.card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:1rem}
+
+/* Disequazione */
+#board{display:flex;flex-direction:column;gap:1rem;align-items:center;min-width:min(92vw,360px);max-width:1100px}
+#ineq{display:flex;align-items:center;gap:1.4rem;font-size:2.6rem;color:var(--math)}
+.membro{display:flex;gap:.6rem;min-height:4.8rem;min-width:12rem;border:2px dashed #cbd5e1;border-radius:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+.membro:empty::before{content:"0";color:#64748b}
+
+/* elementi trascinabili (UI distinta dalla matematica) */
+.monomio,.group .factor{
+  background:var(--uiBg);
+  border:2px solid var(--uiBorder);
+  border-radius:14px;
+  padding:.55rem .85rem;
+  user-select:none; cursor:grab;
+  font-size:1.9rem; min-width:3.4rem; text-align:center;
+  color:var(--math);
+}
+.monomio:active,.group .factor:active{border-color:var(--uiBorderDark)}
+.group{display:inline-flex;align-items:flex-start;gap:.45rem;padding:.35rem .5rem;flex-wrap:nowrap}
+.group .par{font-weight:400;color:#334155}
+.groupInner{display:inline-flex;align-items:flex-start;white-space:nowrap;font-variant-numeric:tabular-nums}
+.innerTerm{display:inline-block;transition:opacity .3s}
+.innerTerm.done{opacity:.35}
+.sep{padding:0 .25rem}
+
+/* Riga prodotto mostrata sotto la parentesi */
+.productWrap{display:flex;flex-direction:column; align-items:flex-start}
+.productLine{
+  margin-top:.25rem; font-size:1.25rem; color:var(--ok);
+  background:rgba(22,163,74,.08); border-left:4px solid var(--ok);
+  padding:.25rem .5rem; border-radius:8px;
+  animation: productIn .25s ease-out;
+}
+@keyframes productIn{from{opacity:0; transform:translateY(-4px)} to{opacity:1; transform:translateY(0)}}
+
+/* Focus / suggerimenti */
+.focus{outline:4px solid var(--outline);box-shadow:0 0 0 6px rgba(14,165,233,.15)}
+.suggest{outline:3px dashed var(--pulse);box-shadow:0 0 0 6px rgba(255,179,0,.15)}
+.bad{background:#ffe1e1}
+.factorBusy{opacity:.35}
+
+/* Effetti */
+.haloGreen{animation:halo 1.5s ease-out 1}
+@keyframes halo{0%{box-shadow:0 0 0 10px rgba(34,197,94,.35)}70%{box-shadow:0 0 0 26px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.flashOp{animation:borderFlash .9s ease-in-out 2}
+@keyframes borderFlash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}100%{box-shadow:0 0 0 16px rgba(34,197,94,0)}}
+
+/* Suggerimenti */
+#coach{display:flex;flex-direction:column;gap:.6rem;align-items:center;text-align:center}
+#bigHint{font-size:1.3rem;line-height:1.35;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:.7rem 1rem;max-width:980px}
+#actionRow{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.bigAction{display:none;border:none;border-radius:16px;padding:.9rem 1.2rem;background:var(--accent);color:#fff;font-size:1.05rem}
+.bigAction:hover{background:var(--accentDark)}
+.pulseGlow{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,179,0,.65)}70%{box-shadow:0 0 0 22px rgba(255,179,0,0)}100%{box-shadow:0 0 0 0 rgba(255,179,0,0)}}
+
+/* Utility + messaggi */
+#utility{display:flex;gap:.5rem;align-items:center;justify-content:center}
+.smallBtn{border:none;border-radius:12px;padding:.45rem .65rem;background:#64748b;color:#fff}
+.smallBtn:hover{background:#475569}
+#msg{min-height:1.2rem;color:#0f172a;text-align:center}
+
+/* Storico */
+#historyPanel{min-width:280px;max-width:540px}
+#history{max-height:70vh;overflow:auto;font-size:1.02rem;line-height:1.35}
+.step{border-left:5px solid #0ea5e9;padding:.55rem .7rem;margin:.6rem 0;background:#fff;border-radius:12px}
+.step.current{border-color:#22c55e;background:#f0fff6}
+.step .guide{display:block;margin-top:.25rem;color:#475569;font-size:.92rem}
+
+/* Drag ghost */
+.drag-ghost{
+  position:fixed;left:0;top:0;margin:0;padding:.55rem .85rem;background:var(--uiBg);
+  border:2px solid var(--uiBorder);border-radius:14px;font-size:1.9rem;pointer-events:none;z-index:40;
+  transform:translate(-50%,-50%);box-shadow:0 12px 24px rgba(0,0,0,.25);transition:transform .45s ease
+}
+
+/* Soluzione grafica */
+#solution{display:none;margin-top:.8rem;width:100%;max-width:1000px}
+#intervalText{margin-top:.35rem;text-align:center;font-size:1.1rem}
+svg{width:100%;height:120px}
+.axis{stroke:#0f172a;stroke-width:2}
+.segment{stroke:#16a34a;stroke-width:6}
+.fill{fill:#16a34a}
+.hollow{fill:#fff;stroke:#16a34a;stroke-width:3}
+
+/* Tastierino */
+#keypadBack{display:none;position:fixed;inset:0;background:rgba(2,6,23,.55);backdrop-filter:blur(2px);z-index:50}
+#keypad{display:none;position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;box-shadow:0 18px 60px rgba(0,0,0,.25);padding:1rem;z-index:60;width:min(92vw,420px)}
+#kDisplay{font-size:1.8rem;border:2px solid #e2e8f0;border-radius:14px;padding:.5rem .8rem;text-align:center;margin-bottom:.7rem}
+.keyGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem}
+.key{border:none;border-radius:12px;padding:1rem;background:#e2e8f0;font-size:1.25rem}
+.key:active{transform:scale(.98)}
+.key.primary{background:#10b981;color:#fff}
+.key.warn{background:#f59e0b;color:#fff}
+.key.danger{background:#ef4444}
+
+/* Responsive */
+@media (max-width:640px){
+  #ineq{font-size:2.2rem}
+  .monomio,.group .factor{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+<main>
+  <section id="board" class="card">
+    <div id="ineq" aria-label="disequazione">
+      <div id="A" class="membro"></div>
+      <span id="opText" style="min-width:2.5rem;text-align:center">?</span>
+      <div id="B" class="membro"></div>
+    </div>
+
+    <div id="coach">
+      <div id="bigHint">Trascina il fattore sui termini in parentesi. Dopo ogni prodotto, vedi il risultato nel rigo sotto.</div>
+      <div id="actionRow">
+        <button id="actTransport" class="bigAction">Sposta (cambio segno)</button>
+        <button id="actSum" class="bigAction">Somma due termini uguali</button>
+        <button id="actDivideA" class="bigAction">Dividi per il coefficiente di x</button>
+        <button id="actDivideK" class="bigAction">Dividi per k</button>
+        <button id="actApply" class="bigAction">Applica mossa suggerita</button>
+      </div>
+
+      <div id="solution">
+        <svg id="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="intervalText"></div>
+      </div>
+    </div>
+
+    <div id="utility">
+      <button id="undo" class="smallBtn">↶ Undo</button>
+      <button id="redo" class="smallBtn">↷ Redo</button>
+      <button id="newExercise" class="smallBtn">Nuovo esercizio</button>
+    </div>
+    <div id="msg" aria-live="polite"></div>
+  </section>
+
+  <section id="historyPanel" class="card">
+    <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
+    <div id="history"></div>
+  </section>
+</main>
+
+<!-- Tastierino per k -->
+<div id="keypadBack" aria-hidden="true"></div>
+<div id="keypad" role="dialog" aria-modal="true" aria-labelledby="kLabel">
+  <div id="kLabel" style="font-weight:600;margin-bottom:.35rem">Inserisci k (intero, decimale o frazione p/q)</div>
+  <div id="kDisplay" aria-live="polite">0</div>
+  <div class="keyGrid" style="margin-bottom:.6rem">
+    <button class="key">7</button><button class="key">8</button><button class="key">9</button><button class="key warn">⌫</button>
+    <button class="key">4</button><button class="key">5</button><button class="key">6</button><button class="key">/</button>
+    <button class="key">1</button><button class="key">2</button><button class="key">3</button><button class="key">,</button>
+    <button class="key">0</button><button class="key">00</button><button class="key">±</button><button class="key danger">C</button>
+  </div>
+  <div class="keyGrid">
+    <button class="key">1/2</button><button class="key">1/3</button><button class="key">2</button><button class="key">-1</button>
+    <button class="key primary" id="kOk">OK</button><button class="key" id="kCancel" style="grid-column:span 3">Annulla</button>
+  </div>
+</div>
+
+<script>
+/* ===== utils & frazioni ===== */
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+const hint=t=>$('#msg').innerText=t||'';
+const abs=n=>n<0?-n:n, gcd=(a,b)=>{a=abs(a|0);b=abs(b|0);while(b){const t=a%b;a=b;b=t}return a||1}, lcm=(a,b)=>abs(a*b)/gcd(a,b);
+const normFrac=({num,den})=>{if(den===0)throw Error('Denominatore nullo'); if(num===0)return{num:0,den:1}; if(den<0){num=-num;den=-den}const g=gcd(abs(num),den);return{num:num/g,den:den/g}};
+const addFrac=(a,b)=>{const den=lcm(a.den,b.den);return normFrac({num:a.num*(den/a.den)+b.num*(den/b.den),den})};
+const mulFrac=(a,b)=>normFrac({num:a.num*b.num,den:a.den*b.den});
+const flipFrac=a=>({num:-a.num,den:a.den});
+function parseK(s){s=(s||'').trim().replace(',', '.'); if(!s)return null;
+  if(/^[+-]?\\d+\\/\\d+$/.test(s)){const [p,q]=s.split('/').map(Number); if(!isFinite(p)||!isFinite(q)||q===0)return null; return normFrac({num:p,den:q});}
+  const n=Number(s); if(!isFinite(n))return null; if(!s.includes('.'))return normFrac({num:n,den:1});
+  const d=s.split('.')[1].length; return normFrac({num:Math.round(n*10**d),den:10**d});
+}
+
+/* ===== modello ===== */
+let state, stack=[], redo=[], haloRequest=null, productTimeout=null;
+const deep=o=>JSON.parse(JSON.stringify(o));
+function simplifyOnly(){
+  for(const side of ['A','B']){
+    state[side]=state[side].map(t=>{
+      if(t.type==='group'){ t.factor=normFrac(t.factor); t.inner=t.inner.map(m=>({...m,...normFrac(m)})); return t; }
+      return {...normFrac(t),x:t.x,type:'mono'};
+    }).filter(t=> t.type==='group' ? t.inner.length>0 : (t.num!==0 || t.x) );
+  }
+}
+
+/* ===== format ===== */
+function monoText(m,absOnly=false){
+  const sgn=m.num<0?'-':'', N=abs(m.num);
+  const coeff=(m.den===1)?(absOnly?''+N:sgn+N):(absOnly?(N+'/'+m.den):(sgn+N+'/'+m.den));
+  if(m.x){ if(m.den===1&&N===1) return absOnly?'x':(sgn==='-'?'-x':'x'); return coeff+'x'; }
+  return coeff;
+}
+function joinWithSigns(arr){
+  const out=[];
+  arr.forEach((m,i)=>{
+    if(i>0){ out.push({type:'sep',text:(m.num<0?' - ':' + ')}); }
+    out.push({type:'term',mono:m});
+  });
+  return out;
+}
+function sideToText(side){
+  if(!side.length) return '0';
+  return side.map(t=> t.type==='group'
+    ? monoText({num:t.factor.num,den:t.factor.den,x:false})+'·('+sideToText(t.inner)+')'
+    : monoText(t,false)
+  ).join(' + ').replace(/\\+\\s-\\s/g,' - ');
+}
+
+/* ===== render ===== */
+function render(){
+  for(const id of ['A','B']){
+    const c=$('#'+id); c.innerHTML='';
+    state[id].forEach((t,i)=>{
+      if(t.type==='group'){
+        const g=document.createElement('div'); g.className='group productWrap'; g.dataset.side=id; g.dataset.index=String(i);
+
+        const topRow=document.createElement('div'); topRow.style.display='inline-flex'; topRow.style.alignItems='flex-start'; topRow.style.gap='.45rem';
+
+        const factor=document.createElement('div'); factor.className='factor monomio'; factor.innerText=monoText({num:t.factor.num,den:t.factor.den,x:false});
+        factor.draggable=true;
+        factor.addEventListener('dragstart',ev=>{factor.classList.add('factorBusy'); ev.dataTransfer.setData('application/json', JSON.stringify({kind:'factor',side:id,gidx:i}));});
+        factor.addEventListener('dragend',()=>factor.classList.remove('factorBusy'));
+
+        const open=document.createElement('span'); open.className='par'; open.textContent='(';
+        const inner=document.createElement('div'); inner.className='groupInner';
+
+        // costruisci termini come span separati per poter attenuare i done
+        const pieces=joinWithSigns(t.inner);
+        pieces.forEach((p,idx)=>{
+          if(p.type==='sep'){
+            const s=document.createElement('span'); s.className='sep'; s.textContent=p.text.replace('+ -',' - '); inner.appendChild(s);
+          }else{
+            const sp=document.createElement('span'); sp.className='innerTerm'+(p.mono.done?' done':'');
+            sp.textContent=monoText(p.mono,false).replace('+ -',' - ');
+            inner.appendChild(sp);
+          }
+        });
+
+        const close=document.createElement('span'); close.className='par'; close.textContent=')';
+
+        topRow.appendChild(factor); topRow.appendChild(open); topRow.appendChild(inner); topRow.appendChild(close);
+        g.appendChild(topRow);
+
+        // Riga prodotto sotto
+        if(t.lastProduct){
+          const pl=document.createElement('div'); pl.className='productLine'; pl.textContent='= '+t.lastProduct;
+          g.appendChild(pl);
+        }
+
+        g.addEventListener('dragover',ev=>ev.preventDefault());
+        g.addEventListener('drop',ev=>{
+          ev.preventDefault();
+          const data=ev.dataTransfer.getData('application/json'); if(!data) return;
+          const d=JSON.parse(data); if(d.kind!=='factor'||d.side!==id||d.gidx!==i) return;
+          const ghost=createGhost(factor); moveGhost(ghost,g.getBoundingClientRect(),()=>applyFactorOnce(id,i));
+        });
+        c.appendChild(g);
+
+      }else{
+        const n=document.createElement('div'); n.className='monomio'; n.dataset.side=id; n.dataset.index=String(i);
+        n.innerText=monoText(t,false); n.draggable=true;
+        n.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('application/json', JSON.stringify({kind:'mono',side:id,index:i}));});
+        c.appendChild(n);
+      }
+    });
+  }
+  $('#opText').innerText=state.op;
+  attachDropZones(); renderHistory(); updateFocusUI();
+
+  if(haloRequest){ const node=$('#'+haloRequest.side).querySelector(`[data-index="${haloRequest.gidx}"]`); if(node){node.classList.add('haloGreen'); setTimeout(()=>node.classList.remove('haloGreen'),1600);} haloRequest=null; }
+}
+
+/* ===== parentesi: fattore × termine ===== */
+function applyFactorOnce(side,gidx){
+  const g=state[side][gidx]; if(!g||g.type!=='group') return;
+  const already=g.inner.filter(m=>m.done).length;
+  const k=g.inner.findIndex(m=>!m.done); if(k===-1) return;
+  const newMono={...mulFrac(g.inner[k],g.factor),x:g.inner[k].x,type:'mono',done:true};
+  g.inner.splice(k,1,newMono);
+
+  // mostra risultato nel rigo di sotto per un breve periodo
+  g.lastProduct = monoText(newMono,false);
+  if(productTimeout) clearTimeout(productTimeout);
+  productTimeout = setTimeout(()=>{ try{ delete g.lastProduct; render(); }catch(e){} }, 1500);
+
+  if(g.inner.every(m=>m.done)){
+    const expanded=g.inner.map(m=>({num:m.num,den:m.den,x:m.x,type:'mono'}));
+    delete g.lastProduct;
+    state[side].splice(gidx,1,...expanded);
+    pushSnap('Parentesi aperta (per trascinamenti)'); hint('Fattore moltiplicato su tutti i termini. Parentesi aperta.');
+  }else{
+    pushSnap('Moltiplicazione: fattore × termine'); hint('Moltiplicazione eseguita. Guarda il risultato nel rigo sotto.');
+    if(already===0) haloRequest={side,gidx};
+  }
+  render();
+}
+
+/* ===== DnD: somma & trasporto ===== */
+function attachDropZones(){
+  ;[$('#A'),$('#B')].forEach(container=>{
+    container.ondragover=e=>e.preventDefault();
+    container.ondrop=e=>{
+      e.preventDefault();
+      const data=e.dataTransfer.getData('application/json'); if(!data) return;
+      const info=JSON.parse(data); if(info.kind==='factor'){hint('Trascina il fattore sui termini dentro la parentesi.'); return;}
+      if(info.kind!=='mono') return;
+      const from=info.side, to=container.id, index=info.index, term=state[from][index];
+      if(!term||term.type!=='mono'){hint('Apri/espandi le parentesi prima.'); return;}
+      const targetNode=e.target.closest('.monomio');
+
+      if(from===to){
+        if(!targetNode){hint('Per sommare: trascina sopra un altro termine uguale.'); return;}
+        const ontoIdx=Number(targetNode.dataset.index), arr=state[to], a=arr[index], b=arr[ontoIdx];
+        if(!a||!b||a.type!=='mono'||b.type!=='mono'||a.x!==b.x){hint('Questi due non si sommano.'); targetNode.classList.add('bad'); setTimeout(()=>targetNode.classList.remove('bad'),450); return;}
+        const onto=Math.min(index,ontoIdx), fromIdx=Math.max(index,ontoIdx);
+        arr[onto]={...addFrac(a,b),x:a.x,type:'mono'}; arr.splice(fromIdx,1);
+        simplifyOnly(); pushSnap('Somma per trascinamento'); render(); hint('Somma eseguita.');
+      }else{
+        state[from].splice(index,1); state[to].push({...flipFrac(term),x:term.x,type:'mono'});
+        simplifyOnly(); pushSnap('Spostamento (cambio segno)'); render(); hint('Spostamento eseguito.');
+      }
+    };
+  });
+}
+
+/* ===== suggeritore ===== */
+const hasGroup=side=>state[side].some(t=>t.type==='group');
+const firstGroup=side=>state[side].findIndex(t=>t.type==='group');
+function sumAgg(side){return state[side].reduce((acc,t)=>{if(t.type==='mono'){if(t.x)acc.ax=addFrac(acc.ax,{num:t.num,den:t.den}); else acc.c=addFrac(acc.c,{num:t.num,den:t.den});} return acc;},{ax:{num:0,den:1},c:{num:0,den:1}});}
+let currentSuggestion=null;
+function computeSuggestion(){
+  const sideG=hasGroup('A')?'A':(hasGroup('B')?'B':null);
+  if(sideG){const gidx=firstGroup(sideG), g=state[sideG][gidx], k=g.inner.findIndex(m=>!m.done);
+    if(k!==-1) return {type:'mulInside',payload:{side:sideG,gidx},text:'Trascina il fattore sopra ciascun termine tra parentesi.',hi:[{side:sideG,idx:gidx}],primary:'actApply'};}
+  if(state.B.some(t=>t.type==='mono'&&t.x)){const idx=state.B.findIndex(t=>t.type==='mono'&&t.x); return {type:'transport',payload:{from:'B',idx,to:'A'},text:'Sposta una x a sinistra.',hi:[{side:'B',idx}],primary:'actTransport'};}
+  if(state.A.some(t=>t.type==='mono'&&!t.x)){const idx=state.A.findIndex(t=>t.type==='mono'&&!t.x); return {type:'transport',payload:{from:'A',idx,to:'B'},text:'Sposta un numero a destra.',hi:[{side:'A',idx}],primary:'actTransport'};}
+  const count=(side,isX)=>state[side].filter(t=>t.type==='mono'&&(!!t.x===!!isX)).length;
+  if(count('A',true)>=2){const ids=state.A.map((t,i)=>[t,i]).filter(([t])=>t.type==='mono'&&t.x).slice(0,2).map(([,i])=>i); return {type:'sumTwo',payload:{side:'A',idx1:ids[0],idx2:ids[1]},text:'Somma due x a sinistra.',hi:[{side:'A',idx:ids[0]},{side:'A',idx:ids[1]}],primary:'actSum'};}
+  if(count('B',false)>=2){const ids=state.B.map((t,i)=>[t,i]).filter(([t])=>t.type==='mono'&&!t.x).slice(0,2).map(([,i])=>i); return {type:'sumTwo',payload:{side:'B',idx1:ids[0],idx2:ids[1]},text:'Somma due numeri a destra.',hi:[{side:'B',idx:ids[0]},{side:'B',idx:ids[1]}],primary:'actSum'};}
+  const A=sumAgg('A'), a=A.ax;
+  if(a.num===0) return {type:'finalCheck',payload:{},text:'È rimasto solo il confronto tra numeri.',hi:[],primary:'actApply'};
+  if(!(a.num===1&&a.den===1)) return {type:'divideA',payload:{},text:'Dividi per il numero davanti a x (se è negativo, il verso cambia).',hi:[],primary:'actDivideA'};
+  return {type:'none',payload:null,text:'Porta alla forma x ? numero. Se serve, riduci la frazione.',hi:[],primary:null};
+}
+function updateFocusUI(){
+  $$('.monomio,.group .factor').forEach(n=>n.classList.remove('suggest','focus'));
+  $$('#actionRow .bigAction').forEach(b=>{b.style.display='none';b.classList.remove('pulseGlow');});
+  $('#solution').style.display='none'; $('#intervalText').innerText='';
+  currentSuggestion=computeSuggestion();
+  (currentSuggestion.hi||[]).forEach(h=>{const node=$('#'+h.side).querySelector(`[data-index="${h.idx}"]`); if(node) node.classList.add('suggest','focus');});
+  $('#bigHint').innerText=currentSuggestion.text||'';
+  if(currentSuggestion.primary){const b=$('#'+currentSuggestion.primary); if(b){b.style.display='inline-flex'; b.classList.add('pulseGlow');}}
+  $('#actDivideK').style.display='inline-flex';
+  if(isSolved()){ drawSolution(); $('#solution').style.display='block'; }
+}
+
+/* ===== history ===== */
+function snapshotText(st){return sideToText(st.A)+' '+st.op+' '+sideToText(st.B);}
+function renderHistory(){
+  const h=$('#history'); h.innerHTML='';
+  stack.forEach((e,i)=>{const d=document.createElement('div'); d.className='step'+(i===stack.length-1?' current':'');
+    d.innerHTML=(e.label?('<strong>'+e.label+': </strong> '):'')+snapshotText(e.state)+(e.nextGuide?`<span class="guide">Suggerimento: ${e.nextGuide}</span>`:'');
+    d.onclick=()=>{while(stack.length-1>i){redo.push(stack.pop())} state=deep(stack[i].state); render();}; h.appendChild(d);});
+  h.scrollTop=h.scrollHeight;
+}
+const nextGuideText=()=>computeSuggestion()?.text||'';
+function pushSnap(label=''){stack.push({state:deep(state),label,nextGuide:nextGuideText()}); redo.length=0; renderHistory();}
+
+/* ===== azioni base ===== */
+function doTransport(from,idx,to){
+  const t=state[from][idx]; if(!t||t.type!=='mono'){hint('Apri/espandi le parentesi prima.'); return false;}
+  state[from].splice(idx,1); state[to].push({...flipFrac(t),x:t.x,type:'mono'});
+  simplifyOnly(); pushSnap('Spostamento (cambio segno)'); render(); return true;
+}
+function doSum(side,i1,i2){
+  const arr=state[side], a=arr[i1], b=arr[i2];
+  if(!a||!b||a.type!=='mono'||b.type!=='mono'||a.x!==b.x) return false;
+  const onto=Math.min(i1,i2), from=Math.max(i1,i2);
+  arr[onto]={...addFrac(a,b),x:a.x,type:'mono'}; arr.splice(from,1);
+  simplifyOnly(); pushSnap('Somma termini uguali'); render(); return true;
+}
+
+/* ===== divisioni ===== */
+function divideByCoeffA(){
+  const A=sumAgg('A'), a=A.ax; if(a.num===0) return;
+  flashMembers();
+  const inv={num:a.den,den:a.num};
+  for(const s of ['A','B']) state[s]=state[s].map(t=> t.type==='mono'?({...mulFrac(t,inv),x:t.x,type:'mono'}):t);
+  if(a.num<0) flipOperator();
+  simplifyOnly(); pushSnap('Divisione per coefficiente di x'); render();
+}
+function flipOperator(){const map={'<':'>','>':'<','≤':'≥','≥':'≤'}; state.op=map[state.op]||state.op; $('#opText').innerText=state.op;}
+async function divideByK(){
+  const entered=await openKeypad(''); if(entered===null){hint('Operazione annullata.'); return;}
+  const k=parseK(entered); if(!k){hint('k non valido.'); return;} if(k.num===0){hint('Non puoi dividere per 0.'); return;}
+  flashMembers();
+  const inv={num:k.den,den:k.num};
+  for(const s of ['A','B']) state[s]=state[s].map(t=> t.type==='mono'?({...mulFrac(t,inv),x:t.x,type:'mono'}):t);
+  if(k.num<0) flipOperator();
+  simplifyOnly(); pushSnap('Divisione per k = '+monoText(k)); render();
+}
+function flashMembers(){['A','B'].forEach(id=>$('#'+id).classList.add('flashOp')); setTimeout(()=>['A','B'].forEach(id=>$('#'+id).classList.remove('flashOp')),900);}
+
+/* ===== tastierino ===== */
+let keypadResolve=null;
+function openKeypad(initial=''){ $('#keypadBack').style.display='block'; $('#keypad').style.display='block'; $('#kDisplay').innerText=initial||'0'; return new Promise(res=>{keypadResolve=res}); }
+function closeKeypad(){ $('#keypadBack').style.display='none'; $('#keypad').style.display='none'; keypadResolve=null; }
+function kGet(){return $('#kDisplay').innerText.trim();}
+function kSet(v){$('#kDisplay').innerText=v||'0';}
+$$('#keypad .key').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const val=btn.innerText;
+    if(btn.id==='kOk'){const out=kGet(); if(keypadResolve) keypadResolve(out); closeKeypad(); return;}
+    if(btn.id==='kCancel'){if(keypadResolve) keypadResolve(null); closeKeypad(); return;}
+    if(val==='C'){kSet('0'); return;}
+    if(val==='⌫'){const s=kGet(); kSet(s.length>1?s.slice(0,-1):'0'); return;}
+    if(val==='±'){const s=kGet(); if(s==='0')return; kSet(s.startsWith('-')?s.slice(1):'-'+s); return;}
+    let s=kGet();
+    if(val==='1/2'||val==='1/3'||val==='-1'){kSet(val); return;}
+    if(val==='00'){s=(s==='0')?'0':s+'00'; kSet(s); return;}
+    if(val==='/'||val===','){if(s.includes('/')&&val==='/')return; if(s.includes('.')&&val===',')return; if(s==='0') s=(val==='/')?'1/':'0.'; else s+=(val==='/')?'/':'.'; kSet(s); return;}
+    kSet(s==='0'?val:s+val);
+  });
+});
+
+/* ===== animazione “Applica mossa suggerita” ===== */
+function applySuggestionAnimated(){
+  const s=computeSuggestion(); if(!s) return;
+  if(s.type==='mulInside'){
+    const {side,gidx}=s.payload, group=$('#'+side).querySelector(`[data-index="${gidx}"]`); if(!group) return;
+    const factor=group.querySelector('.factor'); if(!factor) return;
+    const ghost=createGhost(factor); moveGhost(ghost, group.getBoundingClientRect(), ()=>applyFactorOnce(side,gidx)); return;
+  }
+  if(s.type==='transport'){
+    const {from,idx,to}=s.payload, node=$('#'+from).querySelector(`[data-index="${idx}"]`); if(!node) return;
+    const ghost=createGhost(node); moveGhost(ghost, $('#'+to).getBoundingClientRect(), ()=>doTransport(from,idx,to)); return;
+  }
+  if(s.type==='sumTwo'){
+    const {side,idx1,idx2}=s.payload, fromIdx=Math.max(idx1,idx2), ontoIdx=Math.min(idx1,idx2);
+    const node=$('#'+side).querySelector(`[data-index="${fromIdx}"]`), onto=$('#'+side).querySelector(`[data-index="${ontoIdx}"]`);
+    if(!node||!onto) return; const ghost=createGhost(node); moveGhost(ghost, onto.getBoundingClientRect(), ()=>doSum(side,idx1,idx2)); return;
+  }
+  if(s.type==='divideA'){ divideByCoeffA(); return; }
+  if(s.type==='finalCheck'){ if(isSolved()){drawSolution(); $('#solution').style.display='block';} return; }
+}
+$('#actApply').onclick=applySuggestionAnimated;
+$('#actTransport').onclick=()=>{if(computeSuggestion()?.type==='transport') applySuggestionAnimated();};
+$('#actSum').onclick=()=>{if(computeSuggestion()?.type==='sumTwo') applySuggestionAnimated();};
+$('#actDivideA').onclick=divideByCoeffA;
+$('#actDivideK').onclick=divideByK;
+
+/* ===== ghost ===== */
+function createGhost(node){
+  const r=node.getBoundingClientRect(), g=document.createElement('div');
+  g.className='drag-ghost'; g.style.width=r.width+'px'; g.style.height=r.height+'px';
+  g.style.transform=`translate(${r.left+r.width/2}px, ${r.top+r.height/2}px)`; g.innerHTML=node.innerHTML;
+  document.body.appendChild(g); if(node.classList.contains('factor')) node.classList.add('factorBusy'); return g;
+}
+function moveGhost(ghost,toRect,onDone){
+  const x=toRect.left+toRect.width/2, y=toRect.top+toRect.height/2;
+  requestAnimationFrame(()=>{ghost.style.transform=`translate(${x}px, ${y}px)`; ghost.addEventListener('transitionend',()=>{ghost.remove(); $$('.factorBusy').forEach(f=>f.classList.remove('factorBusy')); onDone&&onDone();},{once:true});});
+}
+
+/* ===== retta soluzione ===== */
+function isSolved(){
+  const L=state.A.filter(t=>t.type==='mono'), R=state.B.filter(t=>t.type==='mono');
+  if(L.some(t=>!t.x)) return false; if(R.some(t=>t.x)) return false;
+  const ax=L.filter(t=>t.x), c=R.filter(t=>!t.x); if(ax.length!==1||c.length!==1) return false;
+  const a=ax[0]; return (a.num===1&&a.den===1);
+}
+const solutionValue=()=>{const c=state.B.find(t=>t.type==='mono'&&!t.x); return normFrac({num:c.num,den:c.den});};
+function drawSolution(){
+  const svg=$('#numberline'); svg.innerHTML=''; const w=800,y=60;
+  svg.appendChild(line(40,w-40,y,y,'axis'));
+  const c=solutionValue(), v=(c.den===1?(""+c.num):(c.num+"/"+c.den)), cx=w/2;
+  const right=(state.op==='>'||state.op==='≥'), inclusive= right ? (state.op==='≥') : (state.op==='≤');
+  const dot=document.createElementNS('http://www.w3.org/200/svg','circle'); // typo safe fallback
+  const dot2=document.createElementNS('http://www.w3.org/2000/svg','circle'); // correct
+  const target = dot2; target.setAttribute('cx',cx); target.setAttribute('cy',y); target.setAttribute('r',8); target.setAttribute('class',inclusive?'fill':'hollow'); svg.appendChild(target);
+  svg.appendChild(line(right?cx:60, right?w-60:cx, y, y, 'segment'));
+  const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon'); tri.setAttribute('points', right?`${w-44},${y} ${w-60},${y-10} ${w-60},${y+10}`:`44,${y} 60,${y-10} 60,${y+10}`); tri.setAttribute('fill','#16a34a'); svg.appendChild(tri);
+  svg.appendChild(text(cx,y-16,v));
+  $('#intervalText').innerText='Intervallo soluzione: '+intervalNotation(c,state.op);
+}
+function line(x1,x2,y1,y2,cls){const l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1); l.setAttribute('x2',x2); l.setAttribute('y1',y1); l.setAttribute('y2',y2); l.setAttribute('class',cls); return l;}
+function text(x,y,t){const e=document.createElementNS('http://www.w3.org/2000/svg','text'); e.setAttribute('x',x); e.setAttribute('y',y); e.setAttribute('text-anchor','middle'); e.setAttribute('font-size','16'); e.textContent=t; return e;}
+function intervalNotation(c,op){const v=(c.den===1?(""+c.num):(c.num+"/"+c.den)); if(op==='>')return '('+v+', +∞)'; if(op==='≥')return '['+v+', +∞)'; if(op==='<')return '(-∞, '+v+')'; if(op==='≤')return '(-∞, '+v+']'; return '';}
+
+/* ===== init ===== */
+function rndNZ(min=-9,max=9){let n=0; while(n===0){n=Math.floor(Math.random()*(max-min+1))+min} return n;}
+function mono(x){return {num:rndNZ(),den:1,x,type:'mono'};}
+function grouped(){const factor=normFrac({num:(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*3)),den:1}); const ax={num:rndNZ(),den:1,x:true,type:'mono',done:false}; const b={num:rndNZ(),den:1,x:false,type:'mono',done:false}; return {type:'group',factor,inner:[ax,b]};}
+function randomSide(){return (Math.random()<0.5)?[grouped()]:[mono(true),mono(false)];}
+function initIneq(){
+  state={A:randomSide(),B:randomSide(),op:['<','>','≤','≥'][Math.floor(Math.random()*4)]};
+  $('#opText').innerText=state.op; simplifyOnly(); stack=[]; redo=[]; pushSnap('Disequazione iniziale'); render();
+  hint('Trascina il fattore sui termini in parentesi. Dopo ogni prodotto, leggi il rigo sotto.');
+}
+
+/* undo/redo/new */
+$('#undo').onclick=()=>{if(stack.length>1){redo.push(stack.pop()); state=deep(stack[stack.length-1].state); render();}};
+$('#redo').onclick=()=>{if(redo.length){const s=redo.pop(); stack.push(s); state=deep(s.state); render();}};
+$('#newExercise').onclick=()=>{try{initIneq();}catch(e){console.error(e); setTimeout(initIneq,0);}};
+
+/* avvio */
+try{initIneq();}catch(e){console.error(e); setTimeout(initIneq,0);}
+</script>
+</body>
+</html>
