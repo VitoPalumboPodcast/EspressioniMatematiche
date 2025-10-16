@@ -202,29 +202,45 @@
     .factor.glow {
       box-shadow: 0 0 0 5px rgba(46, 125, 50, 0.55);
     }
+    .factor.busy {
+      opacity: 0.35;
+    }
     .group-inner {
       border-radius: 12px;
       border: 2px dashed rgba(17, 34, 68, 0.18);
       padding: 0.45rem 0.6rem;
       display: inline-flex;
-      gap: 0.45rem;
-      align-items: center;
+      gap: 0.35rem;
+      align-items: flex-start;
       min-height: 2.6rem;
       position: relative;
+      flex-wrap: nowrap;
     }
-    .group-inner::before,
-    .group-inner::after {
+    .group-inner-terms {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .group-par,
+    .group-sep {
       font-weight: 600;
-      font-size: 1.05em;
       color: #0f2745;
+      user-select: none;
+      pointer-events: none;
     }
-    .group-inner::before {
-      content: '(';
-      margin-right: 0.25rem;
+    .group-par {
+      font-size: 1.05em;
     }
-    .group-inner::after {
-      content: ')';
-      margin-left: 0.25rem;
+    .group-sep {
+      padding: 0 0.1rem;
+    }
+    .inner-term {
+      display: inline-block;
+      transition: opacity 0.3s;
+    }
+    .inner-term.done {
+      opacity: 0.35;
     }
     .product-log {
       font-size: clamp(1rem, 1.1vw, 1.15rem);
@@ -316,6 +332,21 @@
       border-radius: 16px;
       padding: 1.5rem;
       box-shadow: 0 25px 50px rgba(14, 32, 60, 0.4);
+    }
+    .drag-ghost {
+      position: fixed;
+      left: 0;
+      top: 0;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 0.45rem 0.7rem;
+      font-size: clamp(1.6rem, 3vw, 2.2rem);
+      pointer-events: none;
+      z-index: 50;
+      box-shadow: 0 18px 40px rgba(23, 42, 77, 0.25);
+      transition: transform 0.45s ease;
     }
     .keypad {
       display: grid;
@@ -492,7 +523,7 @@
     });
 
     document.getElementById('divideButton').addEventListener('click', openDivideDialog);
-    document.getElementById('applySuggestion').addEventListener('click', applySuggestion);
+    document.getElementById('applySuggestion').addEventListener('click', applySuggestionAnimated);
     document.getElementById('undoBtn').addEventListener('click', undo);
     document.getElementById('redoBtn').addEventListener('click', redo);
 
@@ -657,6 +688,21 @@
       return coeff;
     }
 
+    function buildInnerPieces(inner) {
+      const pieces = [];
+      inner.forEach((mono, idx) => {
+        if (idx === 0) {
+          pieces.push({ type: 'term', text: monoToString(mono), idx, done: mono.done });
+        } else {
+          const negative = mono.num < 0;
+          pieces.push({ type: 'sep', text: negative ? ' - ' : ' + ' });
+          const absMono = { ...mono, num: Math.abs(mono.num) };
+          pieces.push({ type: 'term', text: monoToString(absMono), idx, done: mono.done });
+        }
+      });
+      return pieces;
+    }
+
     function renderMember(sideEl, side, sideName) {
       sideEl.innerHTML = '';
       side.forEach((term, idx) => {
@@ -687,17 +733,36 @@
           innerBox.className = 'group-inner';
           innerBox.dataset.side = sideName;
           innerBox.dataset.index = idx;
-          term.inner.forEach((mono, innerIdx) => {
-            const inner = document.createElement('span');
-            inner.className = 'term';
-            inner.textContent = monoToString(mono);
-            inner.dataset.side = sideName;
-            inner.dataset.index = idx;
-            inner.dataset.inner = innerIdx;
-            inner.dataset.kind = 'inner';
-            if (mono.done) inner.classList.add('att');
-            innerBox.appendChild(inner);
+          const openPar = document.createElement('span');
+          openPar.className = 'group-par';
+          openPar.textContent = '(';
+          innerBox.appendChild(openPar);
+          const termsWrap = document.createElement('div');
+          termsWrap.className = 'group-inner-terms';
+          const pieces = buildInnerPieces(term.inner);
+          pieces.forEach(piece => {
+            if (piece.type === 'sep') {
+              const sep = document.createElement('span');
+              sep.className = 'group-sep';
+              sep.textContent = piece.text;
+              termsWrap.appendChild(sep);
+            } else {
+              const inner = document.createElement('span');
+              inner.className = 'term inner-term';
+              inner.textContent = piece.text;
+              inner.dataset.side = sideName;
+              inner.dataset.index = idx;
+              inner.dataset.inner = piece.idx;
+              inner.dataset.kind = 'inner';
+              if (piece.done) inner.classList.add('done');
+              termsWrap.appendChild(inner);
+            }
           });
+          innerBox.appendChild(termsWrap);
+          const closePar = document.createElement('span');
+          closePar.className = 'group-par';
+          closePar.textContent = ')';
+          innerBox.appendChild(closePar);
           if (!state.haloShown.has(term.id) && term.inner.some(m => !m.done)) {
             const halo = document.createElement('div');
             halo.className = 'halo';
@@ -795,7 +860,16 @@
       const target = e.target.closest('.term, .member, .group-inner');
       if (!target) return;
       if (dragData.kind === 'factor' && target.classList.contains('term') && target.dataset.kind === 'inner') {
-        applyFactorOnce(dragData.side, dragData.index, parseInt(target.dataset.inner, 10));
+        if (target.classList.contains('done')) {
+          showToast('Termine già moltiplicato.');
+          blinkInvalid(target);
+          return;
+        }
+        const factorEl = document.querySelector(`.factor[data-side="${dragData.side}"][data-index="${dragData.index}"]`);
+        if (!factorEl) return;
+        const ghost = createGhost(factorEl);
+        const rect = target.getBoundingClientRect();
+        moveGhost(ghost, rect, () => applyFactorOnce(dragData.side, dragData.index, parseInt(target.dataset.inner, 10)));
         return;
       }
       if (dragData.kind === 'factor' && target.classList.contains('group-inner')) {
@@ -806,7 +880,12 @@
         if (idx === -1) {
           showToast('Parentesi già distribuita.');
         } else {
-          applyFactorOnce(dragData.side, dragData.index, idx);
+          const factorEl = document.querySelector(`.factor[data-side="${dragData.side}"][data-index="${dragData.index}"]`);
+          if (!factorEl) return;
+          const ghost = createGhost(factorEl);
+          const targetTerm = target.querySelector(`.inner-term[data-inner="${idx}"]`);
+          const rect = targetTerm ? targetTerm.getBoundingClientRect() : target.getBoundingClientRect();
+          moveGhost(ghost, rect, () => applyFactorOnce(dragData.side, dragData.index, idx));
         }
         return;
       }
@@ -844,6 +923,34 @@
       setTimeout(() => el.classList.remove('invalid'), 400);
     }
 
+    function createGhost(node) {
+      const rect = node.getBoundingClientRect();
+      const ghost = document.createElement('div');
+      ghost.className = 'drag-ghost';
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.height = `${rect.height}px`;
+      ghost.style.transform = `translate(${rect.left + rect.width / 2}px, ${rect.top + rect.height / 2}px)`;
+      ghost.textContent = node.textContent;
+      document.body.appendChild(ghost);
+      if (node.classList.contains('factor')) {
+        node.classList.add('busy');
+      }
+      return ghost;
+    }
+
+    function moveGhost(ghost, rect, onDone) {
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+      requestAnimationFrame(() => {
+        ghost.style.transform = `translate(${x}px, ${y}px)`;
+        ghost.addEventListener('transitionend', () => {
+          ghost.remove();
+          document.querySelectorAll('.factor.busy').forEach(el => el.classList.remove('busy'));
+          if (onDone) onDone();
+        }, { once: true });
+      });
+    }
+
     function parseInputToFraction(value) {
       if (!value) return null;
       value = value.replace(',', '.');
@@ -867,30 +974,36 @@
       const side = sideName === 'A' ? state.A : state.B;
       const group = side[groupIdx];
       if (!group || group.type !== 'group') return;
-      const innerMono = group.inner[innerIdx];
-      if (!innerMono || innerMono.done) {
-        showToast('Già moltiplicato.');
+      const explicitIndex = Number.isInteger(innerIdx) ? innerIdx : null;
+      const targetIndex = explicitIndex !== null ? explicitIndex : group.inner.findIndex(m => !m.done);
+      if (targetIndex === -1) {
+        showToast('Parentesi già distribuita.');
         return;
       }
+      const innerMono = group.inner[targetIndex];
+      if (!innerMono || innerMono.done) {
+        showToast('Termine già moltiplicato.');
+        return;
+      }
+      const before = { num: innerMono.num, den: innerMono.den, x: innerMono.x };
       const product = mulFrac(group.factor, innerMono);
       const resultMono = {
         type: 'mono',
         num: product.num,
         den: product.den,
-        x: innerMono.x
+        x: innerMono.x,
+        done: true,
       };
-      innerMono.done = true;
-      group.lastProduct = `${monoToString(group.factor)} × ${monoToString(innerMono)} = ${monoToString(resultMono)}`;
-      if (!group.products) group.products = [];
-      group.products.push(resultMono);
-      pushSnapshot('Distribuzione', 'Continua a moltiplicare gli altri termini.');
-      renderAll();
+      group.inner.splice(targetIndex, 1, resultMono);
+      group.lastProduct = `${monoToString(group.factor)} × ${monoToString(before)} = ${monoToString(resultMono)}`;
       if (group.inner.every(m => m.done)) {
-        const index = side.indexOf(group);
-        side.splice(index, 1, ...group.products);
+        const expanded = group.inner.map(m => ({ type: 'mono', num: m.num, den: m.den, x: m.x }));
+        side.splice(groupIdx, 1, ...expanded);
         pushSnapshot('Parentesi aperta', 'Porta le x a sinistra.');
-        renderAll();
+      } else {
+        pushSnapshot('Moltiplicazione: fattore × termine', 'Continua a moltiplicare gli altri termini.');
       }
+      renderAll();
     }
 
     function doSum(sideName, idx1, idx2) {
@@ -998,8 +1111,8 @@
       if (group) {
         const factor = randomCoeff();
         const inner = [
-          { type: 'mono', num: randomCoeff(), den: 1, x: true },
-          { type: 'mono', num: randomCoeff(), den: 1, x: false },
+          { type: 'mono', num: randomCoeff(), den: 1, x: true, done: false },
+          { type: 'mono', num: randomCoeff(), den: 1, x: false, done: false },
         ];
         const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'g' + Math.random();
         result.push({ type: 'group', factor: { num: factor, den: 1 }, inner, id });
@@ -1061,6 +1174,7 @@
           type: 'distribute',
           text: 'Trascina il fattore sui termini in parentesi.',
           action: () => applyFactorOnce(sideName, groupIdx, innerIdx),
+          payload: { sideName, groupIdx, innerIdx },
           targets: [
             { kind: 'factor', side: sideName, index: groupIdx },
             { kind: 'inner', side: sideName, index: groupIdx, inner: innerIdx },
@@ -1073,6 +1187,7 @@
           type: 'transport-x',
           text: 'Sposta una x a sinistra.',
           action: () => doTransport(sideName, idx, 'A'),
+          payload: { from: sideName, index: idx, to: 'A' },
           targets: [ { kind: 'mono', side: sideName, index: idx } ],
         };
       }
@@ -1082,6 +1197,7 @@
           type: 'transport-num',
           text: 'Porta i numeri a destra.',
           action: () => doTransport(sideName, idx, 'B'),
+          payload: { from: sideName, index: idx, to: 'B' },
           targets: [ { kind: 'mono', side: sideName, index: idx } ],
         };
       }
@@ -1092,6 +1208,7 @@
           type: 'sum',
           text: 'Somma questi due termini uguali.',
           action: () => doSum(sideName, i1, i2),
+          payload: { sideName, idx1: i1, idx2: i2 },
           targets: [
             { kind: 'mono', side: sideName, index: i1 },
             { kind: 'mono', side: sideName, index: i2 }
@@ -1104,6 +1221,7 @@
           type: 'divide',
           text: 'Dividi per il numero davanti a x.',
           action: () => applyDivision(coeff),
+          payload: { coeff },
           targets: [ { kind: 'mono', side: 'A', index: coeff.index } ],
         };
       }
@@ -1112,6 +1230,7 @@
           type: 'done',
           text: 'Forma finale raggiunta.',
           action: () => {},
+          payload: null,
           targets: [],
         };
       }
@@ -1184,21 +1303,58 @@
       return { num: xTerms[0].num, den: xTerms[0].den, index: state.A.indexOf(xTerms[0]) };
     }
 
-    function applySuggestion() {
+    function applySuggestionAnimated() {
       const sug = state.suggestion;
       if (!sug || !sug.action) return;
-      const targets = sug.targets.map(t => {
-        return t.kind === 'factor'
-          ? document.querySelector(`.factor[data-side="${t.side}"][data-index="${t.index}"]`)
-          : document.querySelector(`.term[data-side="${t.side}"][data-index="${t.index}"]${t.inner !== undefined ? `[data-inner="${t.inner}"]` : ''}`);
-      }).filter(Boolean);
-      targets.forEach(el => {
-        el.classList.add('ghost');
-        setTimeout(() => el.classList.remove('ghost'), 500);
-      });
-      setTimeout(() => {
+      if (sug.type === 'distribute') {
+        const { sideName, groupIdx, innerIdx } = sug.payload;
+        const factorEl = document.querySelector(`.factor[data-side="${sideName}"][data-index="${groupIdx}"]`);
+        const groupEl = document.querySelector(`.group-inner[data-side="${sideName}"][data-index="${groupIdx}"]`);
+        if (!factorEl || !groupEl) {
+          sug.action();
+          return;
+        }
+        const targetTerm = groupEl.querySelector(`.inner-term[data-inner="${innerIdx}"]`);
+        const rect = targetTerm ? targetTerm.getBoundingClientRect() : groupEl.getBoundingClientRect();
+        const ghost = createGhost(factorEl);
+        moveGhost(ghost, rect, () => applyFactorOnce(sideName, groupIdx, innerIdx));
+        return;
+      }
+      if (sug.type === 'transport-x' || sug.type === 'transport-num') {
+        const { from, index, to } = sug.payload;
+        const node = document.querySelector(`.term[data-side="${from}"][data-index="${index}"]`);
+        const targetContainer = to === 'A' ? memberAEl : memberBEl;
+        if (!node || !targetContainer) {
+          sug.action();
+          return;
+        }
+        const ghost = createGhost(node);
+        moveGhost(ghost, targetContainer.getBoundingClientRect(), () => doTransport(from, index, to));
+        return;
+      }
+      if (sug.type === 'sum') {
+        const { sideName, idx1, idx2 } = sug.payload;
+        const fromIdx = Math.max(idx1, idx2);
+        const ontoIdx = Math.min(idx1, idx2);
+        const fromNode = document.querySelector(`.term[data-side="${sideName}"][data-index="${fromIdx}"]`);
+        const ontoNode = document.querySelector(`.term[data-side="${sideName}"][data-index="${ontoIdx}"]`);
+        if (!fromNode || !ontoNode) {
+          sug.action();
+          return;
+        }
+        const ghost = createGhost(fromNode);
+        moveGhost(ghost, ontoNode.getBoundingClientRect(), () => doSum(sideName, idx1, idx2));
+        return;
+      }
+      if (sug.type === 'divide') {
         sug.action();
-      }, 420);
+        return;
+      }
+      if (sug.type === 'done') {
+        showToast('Ottimo! Equazione già semplificata.');
+        return;
+      }
+      sug.action();
     }
 
     function checkFinalState() {
@@ -1249,7 +1405,7 @@
         }
       }
       if (e.key === 'Enter') {
-        applySuggestion();
+        applySuggestionAnimated();
       }
       if (e.ctrlKey && e.key.toLowerCase() === 'z') {
         e.preventDefault();
