@@ -17,9 +17,12 @@ main{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding:1rem}
 .membro{display:flex;gap:.6rem;min-height:4.8rem;min-width:12rem;border:2px dashed #cbd5e1;border-radius:14px;align-items:center;justify-content:center;flex-wrap:wrap}
 .membro:empty::before{content:"0";color:#64748b}
 .monomio,.group .factor{background:#fff;border:2px solid #0f172a;border-radius:14px;padding:.55rem .85rem;user-select:none;cursor:grab;font-size:1.9rem;min-width:3.4rem;text-align:center}
-.group{display:inline-flex;align-items:center;gap:.45rem;padding:.35rem .5rem;flex-wrap:nowrap}
-.group .par{font-weight:400;color:#334155} /* parentesi più leggere */
-.groupInner{display:inline-block;white-space:nowrap;font-variant-numeric:tabular-nums}
+.group{display:inline-flex;align-items:flex-start;gap:.45rem;padding:.35rem .5rem;flex-wrap:nowrap}
+.group .par{font-weight:500;color:#334155;font-size:2rem;line-height:1;align-self:center}
+.groupInner{display:inline-flex;align-items:flex-start;white-space:nowrap;font-variant-numeric:tabular-nums}
+.innerTerm{display:inline-block;transition:opacity .3s}
+.innerTerm.done{opacity:.35}
+.sep{padding:0 .25rem}
 .focus{outline:4px solid var(--outline);box-shadow:0 0 0 6px rgba(14,165,233,.15)}
 .suggest{outline:3px dashed var(--pulse);box-shadow:0 0 0 6px rgba(255,179,0,.15)}
 .bad{background:#ffe1e1}
@@ -179,6 +182,19 @@ const prettyJoin=arr=>{
   for(let i=1;i<arr.length;i++){const m=arr[i],neg=m.num<0,absTxt=monoText({...m,num:abs(m.num)},true); out+=neg?' - '+absTxt:' + '+absTxt;}
   return out;
 };
+function termsWithSigns(arr){
+  const pieces=[];
+  arr.forEach((m,i)=>{
+    if(i===0){
+      pieces.push({type:'term',mono:m,idx:i});
+    }else{
+      const neg=m.num<0;
+      pieces.push({type:'sep',text:neg?' - ':' + '});
+      pieces.push({type:'term',mono:{...m,num:abs(m.num)},idx:i});
+    }
+  });
+  return pieces;
+}
 function sideToText(side){
   if(!side.length) return '0';
   return side.map(t=> t.type==='group'
@@ -200,14 +216,27 @@ function render(){
         factor.addEventListener('dragend',()=>factor.classList.remove('factorBusy'));
         const open=document.createElement('span'); open.className='par'; open.textContent='(';
         const inner=document.createElement('div'); inner.className='groupInner';
-        inner.textContent=t.inner.map(m=>monoText(m,false)).join(' + ').replace(/\+\s-\s/g,' - ');
+        const pieces=termsWithSigns(t.inner);
+        pieces.forEach(piece=>{
+          if(piece.type==='sep'){
+            const sep=document.createElement('span'); sep.className='sep'; sep.textContent=piece.text; inner.appendChild(sep);
+          }else{
+            const term=document.createElement('span'); term.className='innerTerm'+(piece.mono.done?' done':'');
+            term.dataset.termIndex=String(piece.idx);
+            term.textContent=monoText(piece.mono,false).replace('+ -',' - ');
+            inner.appendChild(term);
+          }
+        });
         const close=document.createElement('span'); close.className='par'; close.textContent=')';
         g.addEventListener('dragover',ev=>ev.preventDefault());
         g.addEventListener('drop',ev=>{
           ev.preventDefault();
           const data=ev.dataTransfer.getData('application/json'); if(!data) return;
           const d=JSON.parse(data); if(d.kind!=='factor'||d.side!==id||d.gidx!==i) return;
-          const ghost=createGhost(factor); moveGhost(ghost,g.getBoundingClientRect(),()=>applyFactorOnce(id,i));
+          const ghost=createGhost(factor);
+          const targetTerm=g.querySelector('.innerTerm:not(.done)');
+          const rect=targetTerm?targetTerm.getBoundingClientRect():g.getBoundingClientRect();
+          moveGhost(ghost,rect,()=>applyFactorOnce(id,i));
         });
         g.appendChild(factor); g.appendChild(open); g.appendChild(inner); g.appendChild(close); c.appendChild(g);
       }else{
@@ -375,7 +404,10 @@ function applySuggestionAnimated(){
   if(s.type==='mulInside'){
     const {side,gidx}=s.payload, group=$('#'+side).querySelector(`[data-index="${gidx}"]`); if(!group) return;
     const factor=group.querySelector('.factor'); if(!factor) return;
-    const ghost=createGhost(factor); moveGhost(ghost, group.getBoundingClientRect(), ()=>applyFactorOnce(side,gidx)); return;
+    const ghost=createGhost(factor);
+    const targetTerm=group.querySelector('.innerTerm:not(.done)');
+    const rect=targetTerm?targetTerm.getBoundingClientRect():group.getBoundingClientRect();
+    moveGhost(ghost, rect, ()=>applyFactorOnce(side,gidx)); return;
   }
   if(s.type==='transport'){
     const {from,idx,to}=s.payload, node=$('#'+from).querySelector(`[data-index="${idx}"]`); if(!node) return;
