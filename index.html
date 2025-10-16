@@ -1421,11 +1421,41 @@
       renderAll(false);
     }
 
+    function formatMonoSequence(sequence) {
+      return sequence
+        .map((mono, idx) => {
+          if (idx === 0) {
+            return monoToString(mono);
+          }
+          const negative = mono.num < 0;
+          const absMono = negative ? { ...mono, num: -mono.num } : mono;
+          const text = monoToString(absMono);
+          return `${negative ? ' - ' : ' + '}${text}`;
+        })
+        .join('');
+    }
+
     function buildSideString(side) {
-      return side.map(term => {
-        if (term.type === 'mono') return monoToString(term);
-        return `${monoToString(term.factor)}(${term.inner.map(monoToString).join(' + ')})`;
-      }).join(' + ');
+      return side
+        .map((term, idx) => {
+          if (term.type === 'mono') {
+            if (idx === 0) {
+              return monoToString(term);
+            }
+            const negative = term.num < 0;
+            const absMono = negative ? { ...term, num: -term.num } : term;
+            const text = monoToString(absMono);
+            return `${negative ? ' - ' : ' + '}${text}`;
+          }
+          const negative = term.factor.num < 0;
+          const absFactor = negative ? { ...term.factor, num: -term.factor.num } : term.factor;
+          const content = `${monoToString(absFactor)}(${formatMonoSequence(term.inner)})`;
+          if (idx === 0) {
+            return negative ? `-${content}` : content;
+          }
+          return `${negative ? ' - ' : ' + '}${content}`;
+        })
+        .join('');
     }
 
     function sideSignature(side) {
