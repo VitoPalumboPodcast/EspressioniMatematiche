@@ -432,7 +432,7 @@
       <label for="modeSelect">Modalità</label>
       <select id="modeSelect" aria-label="Seleziona la modalità di allenamento">
         <option value="equation">Equazioni lineari</option>
-        <option value="inequality">Disequazioni lineari</option>
+        <option value="inequality" selected>Disequazioni lineari</option>
       </select>
     </div>
   </header>
@@ -515,7 +515,7 @@
       startMode(event.target.value);
     });
 
-    startMode('equation');
+    startMode('inequality');
 
     document.getElementById('newExercise').addEventListener('click', () => {
       if (!state.mode) return;
