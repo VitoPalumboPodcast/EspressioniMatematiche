@@ -190,7 +190,7 @@ const addFrac=(a,b)=>{const den=lcm(a.den,b.den);return normFrac({num:a.num*(den
 const mulFrac=(a,b)=>normFrac({num:a.num*b.num,den:a.den*b.den});
 const flipFrac=a=>({num:-a.num,den:a.den});
 function parseK(s){s=(s||'').trim().replace(',', '.'); if(!s)return null;
-  if(/^[+-]?\\d+\\/\\d+$/.test(s)){const [p,q]=s.split('/').map(Number); if(!isFinite(p)||!isFinite(q)||q===0)return null; return normFrac({num:p,den:q});}
+  if(/^[+-]?\d+\/\d+$/.test(s)){const [p,q]=s.split('/').map(Number); if(!isFinite(p)||!isFinite(q)||q===0)return null; return normFrac({num:p,den:q});}
   const n=Number(s); if(!isFinite(n))return null; if(!s.includes('.'))return normFrac({num:n,den:1});
   const d=s.split('.')[1].length; return normFrac({num:Math.round(n*10**d),den:10**d});
 }
