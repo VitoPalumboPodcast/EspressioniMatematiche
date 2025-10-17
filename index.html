@@ -130,8 +130,25 @@
     .history-entry:focus-visible {
       border-color: var(--accent);
     }
+    .history-entry.current {
+      border-color: var(--success);
+      background: rgba(46, 125, 50, 0.12);
+      box-shadow: inset 0 0 0 1px rgba(46, 125, 50, 0.3);
+    }
     .history-entry .step {
       font-weight: 600;
+    }
+    .history-entry .expression {
+      margin-top: 0.35rem;
+      font-size: 0.95rem;
+      color: #12325b;
+      word-break: break-word;
+    }
+    .history-entry .next {
+      margin-top: 0.25rem;
+      font-size: 0.88rem;
+      color: #33577f;
+      word-break: break-word;
     }
     .equation-display {
       font-size: clamp(1.7rem, 4vw, 2.5rem);
@@ -195,6 +212,18 @@
     }
     .term.att {
       opacity: 0.45;
+    }
+    .hint-panel {
+      background: rgba(26, 115, 232, 0.08);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      font-size: 1rem;
+      color: #0f2745;
+      line-height: 1.4;
+    }
+    #bigHint {
+      margin: 0;
+      font-weight: 600;
     }
     .group-box {
       display: inline-flex;
@@ -303,9 +332,24 @@
       border-radius: 12px;
       font-size: 1rem;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       justify-content: space-between;
-      gap: 0.9rem;
+      gap: 1rem;
+    }
+    .suggestion-copy {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .suggestion-main {
+      font-weight: 600;
+      color: #0b2a55;
+    }
+    .suggestion-detail {
+      font-size: 0.92rem;
+      color: #274b74;
+      line-height: 1.3;
     }
     .suggestion-box button {
       background: var(--success);
@@ -314,6 +358,11 @@
       border-radius: 10px;
       color: #fff;
       font-size: 0.95rem;
+      cursor: pointer;
+    }
+    .suggestion-box button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
     }
     .hidden {
       display: none !important;
@@ -432,6 +481,10 @@
       left: 10%;
       border-right: 14px solid #143a63;
     }
+    .focus {
+      outline: 3px dashed var(--accent);
+      outline-offset: 3px;
+    }
     @media (max-width: 900px) {
       main {
         flex-direction: column;
@@ -461,8 +514,14 @@
         <div class="operator" id="operator" aria-live="polite">=</div>
         <div class="member" id="memberB" aria-label="Membro destro"></div>
       </div>
+      <div class="hint-panel" id="hintPanel" aria-live="polite">
+        <p id="bigHint">Segui i suggerimenti animati per risolvere l'esercizio passo dopo passo.</p>
+      </div>
       <div class="suggestion-box" id="suggestionBox">
-        <span id="suggestionText">Segui i suggerimenti per risolvere l'esercizio.</span>
+        <div class="suggestion-copy">
+          <div id="suggestionMain" class="suggestion-main">Primo passo: osserva la disposizione dei termini.</div>
+          <div id="suggestionDetail" class="suggestion-detail">Trascina le x a sinistra e i numeri a destra; le mosse suggerite mostrano sempre come fare.</div>
+        </div>
         <button id="applySuggestion">Applica mossa suggerita</button>
       </div>
       <div class="controls">
@@ -522,8 +581,12 @@
     const operatorEl = document.getElementById('operator');
     const historyList = document.getElementById('historyList');
     const toast = document.getElementById('toast');
-    const suggestionText = document.getElementById('suggestionText');
+    const bigHintEl = document.getElementById('bigHint');
+    const suggestionMainEl = document.getElementById('suggestionMain');
+    const suggestionDetailEl = document.getElementById('suggestionDetail');
+    const applySuggestionBtn = document.getElementById('applySuggestion');
     const finalPanel = document.getElementById('finalPanel');
+    const divideButton = document.getElementById('divideButton');
 
     let keyboardItems = [];
     let keyboardIndex = 0;
@@ -540,8 +603,8 @@
       initExercise();
     });
 
-    document.getElementById('divideButton').addEventListener('click', openDivideDialog);
-    document.getElementById('applySuggestion').addEventListener('click', applySuggestionAnimated);
+    divideButton.addEventListener('click', openDivideDialog);
+    applySuggestionBtn.addEventListener('click', applySuggestionAnimated);
     document.getElementById('undoBtn').addEventListener('click', undo);
     document.getElementById('redoBtn').addEventListener('click', redo);
 
@@ -602,7 +665,7 @@
       state.A = exercise.A;
       state.B = exercise.B;
       state.op = exercise.op;
-      pushSnapshot('Esercizio generato');
+      pushSnapshot('Esercizio generato', 'Porta le x a sinistra, i numeri a destra e applica la distributiva quando compaiono parentesi.');
       renderAll();
     }
 
@@ -615,7 +678,14 @@
     }
 
     function pushSnapshot(label, info = '') {
-      state.history.push({ snap: cloneState(), label, info });
+      const snap = cloneState();
+      const expression = snapshotToString(snap);
+      let guide = info;
+      if (!guide) {
+        const suggestion = evaluateSuggestion();
+        guide = suggestion ? (suggestion.detail || suggestion.text) : '';
+      }
+      state.history.push({ snap, label, info: guide, expression });
       state.future = [];
       renderHistory();
     }
@@ -635,7 +705,13 @@
     function redo() {
       if (!state.future.length) return;
       const next = state.future.shift();
-      state.history.push({ snap: JSON.parse(JSON.stringify(next.snap)), label: next.label, info: next.info });
+      const clonedSnap = JSON.parse(JSON.stringify(next.snap));
+      state.history.push({
+        snap: clonedSnap,
+        label: next.label,
+        info: next.info,
+        expression: next.expression || snapshotToString(clonedSnap),
+      });
       state.A = JSON.parse(JSON.stringify(next.snap.A));
       state.B = JSON.parse(JSON.stringify(next.snap.B));
       state.op = next.snap.op;
@@ -648,8 +724,22 @@
       state.history.forEach((entry, index) => {
         const div = document.createElement('button');
         div.type = 'button';
-        div.className = 'history-entry';
-        div.innerHTML = `<div class="step">${index + 1}. ${entry.label}</div>${entry.info ? `<div class="next">${entry.info}</div>` : ''}`;
+        div.className = 'history-entry' + (index === state.history.length - 1 ? ' current' : '');
+        const step = document.createElement('div');
+        step.className = 'step';
+        step.textContent = `${index + 1}. ${entry.label}`;
+        div.appendChild(step);
+        const expression = document.createElement('div');
+        expression.className = 'expression';
+        const expressionText = entry.expression || snapshotToString(entry.snap);
+        expression.textContent = expressionText;
+        div.appendChild(expression);
+        if (entry.info) {
+          const nextLine = document.createElement('div');
+          nextLine.className = 'next';
+          nextLine.textContent = `Prossimo passo: ${entry.info}`;
+          div.appendChild(nextLine);
+        }
         div.addEventListener('click', () => {
           state.A = JSON.parse(JSON.stringify(entry.snap.A));
           state.B = JSON.parse(JSON.stringify(entry.snap.B));
@@ -1095,6 +1185,7 @@
         const structure = createStructure();
         const left = buildSide(structure.left);
         const right = buildSide(structure.right);
+        ensureGroupPresence(left, right);
         if (!validateSides(left, right)) continue;
         if (sideSignature(left) === sideSignature(right)) continue;
         const op = mode === 'equation' ? '=' : randomOp();
@@ -1116,6 +1207,34 @@
       return choices[Math.floor(Math.random() * choices.length)];
     }
 
+    function uniqueGroupId() {
+      if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+      }
+      return 'g' + Math.random().toString(36).slice(2, 10);
+    }
+
+    function createGroupTerm() {
+      return {
+        type: 'group',
+        factor: { num: randomCoeff(), den: 1 },
+        inner: [
+          { type: 'mono', num: randomCoeff(), den: 1, x: true, done: false },
+          { type: 'mono', num: randomCoeff(), den: 1, x: false, done: false },
+        ],
+        id: uniqueGroupId(),
+      };
+    }
+
+    function ensureGroupPresence(left, right) {
+      const hasGroup = (side) => side.some(term => term.type === 'group');
+      if (!hasGroup(left) && !hasGroup(right)) {
+        const target = Math.random() < 0.5 ? left : right;
+        target.push(createGroupTerm());
+        shuffle(target);
+      }
+    }
+
     function buildSide({ mono, group }) {
       const result = [];
       let xCount = 0;
@@ -1127,13 +1246,7 @@
         if (placeX) xCount++; else numCount++;
       }
       if (group) {
-        const factor = randomCoeff();
-        const inner = [
-          { type: 'mono', num: randomCoeff(), den: 1, x: true, done: false },
-          { type: 'mono', num: randomCoeff(), den: 1, x: false, done: false },
-        ];
-        const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'g' + Math.random();
-        result.push({ type: 'group', factor: { num: factor, den: 1 }, inner, id });
+        result.push(createGroupTerm());
         xCount++;
         numCount++;
       }
@@ -1167,30 +1280,53 @@
     function computeSuggestion() {
       const suggestion = evaluateSuggestion();
       state.suggestion = suggestion;
-      document.querySelectorAll('.glow').forEach(el => el.classList.remove('glow'));
+      document.querySelectorAll('.glow, .focus').forEach(el => {
+        el.classList.remove('glow');
+        el.classList.remove('focus');
+      });
       if (!suggestion) {
-        suggestionText.textContent = 'Nessun suggerimento disponibile.';
+        suggestionMainEl.textContent = 'Nessun suggerimento disponibile.';
+        const fallback = 'Osserva l\'espressione: scegli tu la prossima mossa o verifica se è già risolta.';
+        suggestionDetailEl.textContent = fallback;
+        suggestionDetailEl.classList.remove('hidden');
+        bigHintEl.textContent = fallback;
+        applySuggestionBtn.disabled = true;
+        applySuggestionBtn.textContent = 'Mossa non disponibile';
+        divideButton.classList.add('hidden');
         return;
       }
-      suggestionText.textContent = suggestion.text;
+      suggestionMainEl.textContent = suggestion.text;
+      const detailText = suggestion.detail || '';
+      suggestionDetailEl.textContent = detailText;
+      suggestionDetailEl.classList.toggle('hidden', !detailText);
+      bigHintEl.textContent = detailText || suggestion.text;
+      applySuggestionBtn.disabled = false;
+      applySuggestionBtn.textContent = suggestion.cta || 'Applica mossa suggerita';
       suggestion.targets.forEach(t => {
         const selector = t.kind === 'factor'
           ? `.factor[data-side="${t.side}"][data-index="${t.index}"]`
           : `.term[data-side="${t.side}"][data-index="${t.index}"]${t.inner !== undefined ? `[data-inner="${t.inner}"]` : ''}`;
         const el = document.querySelector(selector);
-        if (el) el.classList.add('glow');
+        if (el) {
+          el.classList.add('glow');
+          el.classList.add('focus');
+        }
       });
-      document.getElementById('divideButton').classList.toggle('hidden', suggestion.type !== 'divide');
+      if (suggestion.type === 'done') {
+        applySuggestionBtn.textContent = suggestion.cta || 'Mostra riepilogo';
+      }
+      divideButton.classList.toggle('hidden', suggestion.type !== 'divide');
     }
 
     function evaluateSuggestion() {
       const group = findPendingGroup();
       if (group) {
         const { sideName, groupIdx, innerIdx } = group;
-        const innerMono = (sideName === 'A' ? state.A : state.B)[groupIdx].inner[innerIdx];
         return {
           type: 'distribute',
-          text: 'Trascina il fattore sui termini in parentesi.',
+          text: 'Distribuisci il fattore sulle parentesi.',
+          detail: 'Trascina il fattore su ciascun termine della parentesi per applicare la distributiva.',
+          cta: 'Applica distributiva',
           action: () => applyFactorOnce(sideName, groupIdx, innerIdx),
           payload: { sideName, groupIdx, innerIdx },
           targets: [
@@ -1204,6 +1340,8 @@
         return {
           type: 'transport-x',
           text: 'Sposta una x a sinistra.',
+          detail: 'Porta tutte le x nello stesso membro cambiando il segno del termine che si sposta.',
+          cta: 'Sposta la x',
           action: () => doTransport(sideName, idx, 'A'),
           payload: { from: sideName, index: idx, to: 'A' },
           targets: [ { kind: 'mono', side: sideName, index: idx } ],
@@ -1214,6 +1352,8 @@
         return {
           type: 'transport-num',
           text: 'Porta i numeri a destra.',
+          detail: 'Sposta il termine numerico nell\'altro membro cambiando segno per isolare la x.',
+          cta: 'Sposta il numero',
           action: () => doTransport(sideName, idx, 'B'),
           payload: { from: sideName, index: idx, to: 'B' },
           targets: [ { kind: 'mono', side: sideName, index: idx } ],
@@ -1224,7 +1364,9 @@
         const { sideName, i1, i2 } = sum;
         return {
           type: 'sum',
-          text: 'Somma questi due termini uguali.',
+          text: 'Somma questi termini simili.',
+          detail: 'Unisci i termini uguali per semplificare il membro.',
+          cta: 'Somma i termini',
           action: () => doSum(sideName, i1, i2),
           payload: { sideName, idx1: i1, idx2: i2 },
           targets: [
@@ -1237,7 +1379,9 @@
       if (coeff) {
         return {
           type: 'divide',
-          text: 'Dividi per il numero davanti a x.',
+          text: 'Dividi per il coefficiente di x.',
+          detail: 'Dividi entrambi i membri per il coefficiente di x; se è negativo ricordati di invertire il verso.',
+          cta: 'Dividi entrambi i membri',
           action: () => applyDivision(coeff),
           payload: { coeff },
           targets: [ { kind: 'mono', side: 'A', index: coeff.index } ],
@@ -1247,6 +1391,8 @@
         return {
           type: 'done',
           text: 'Forma finale raggiunta.',
+          detail: 'Puoi leggere la soluzione direttamente confrontando x con il numero ottenuto.',
+          cta: 'Mostra riepilogo',
           action: () => {},
           payload: null,
           targets: [],
@@ -1322,6 +1468,7 @@
     }
 
     function applySuggestionAnimated() {
+      if (applySuggestionBtn.disabled) return;
       const sug = state.suggestion;
       if (!sug || !sug.action) return;
       if (sug.type === 'distribute') {
@@ -1454,7 +1601,7 @@
     }
 
     function buildSideString(side) {
-      return side
+      const raw = side
         .map((term, idx) => {
           if (term.type === 'mono') {
             if (idx === 0) {
@@ -1474,6 +1621,14 @@
           return `${negative ? ' - ' : ' + '}${content}`;
         })
         .join('');
+      const cleaned = raw.replace(/\s+/g, ' ').trim();
+      return cleaned.length ? cleaned : '0';
+    }
+
+    function snapshotToString(snap) {
+      const left = buildSideString(snap.A);
+      const right = buildSideString(snap.B);
+      return `${left} ${snap.op} ${right}`.replace(/\s+/g, ' ').trim();
     }
 
     function sideSignature(side) {
