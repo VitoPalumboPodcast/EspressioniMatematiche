@@ -41,6 +41,16 @@
       margin: 0;
       font-size: 1.6rem;
     }
+    .version-tag {
+      margin: 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.22);
+      color: #e8f1ff;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    }
     .mode-switcher {
       display: flex;
       align-items: center;
@@ -428,6 +438,7 @@
 <body>
   <header>
     <h1>Allenatore passo-passo</h1>
+    <p class="version-tag" aria-live="polite">Ultimo aggiornamento: maggio 2024</p>
     <div class="mode-switcher">
       <label for="modeSelect">Modalità</label>
       <select id="modeSelect" aria-label="Seleziona la modalità di allenamento">
