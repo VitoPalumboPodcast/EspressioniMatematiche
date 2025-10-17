@@ -210,9 +210,17 @@ function render(){
   for(const id of ['A','B']){
     const c=$('#'+id); c.innerHTML='';
     state[id].forEach((t,i)=>{
-      if(t.type==='group'){
+      const isGroup=t.type==='group';
+      const isNegative=isGroup ? (t.factor.num<0) : (t.num<0);
+      const showAbs=i>0 && isNegative;
+      if(i>0){
+        const sep=document.createElement('span'); sep.className='sep'; sep.textContent=isNegative?' - ':' + ';
+        c.appendChild(sep);
+      }
+      if(isGroup){
         const g=document.createElement('div'); g.className='group'; g.dataset.side=id; g.dataset.index=String(i);
-        const factor=document.createElement('div'); factor.className='factor monomio'; factor.innerText=monoText({num:t.factor.num,den:t.factor.den,x:false});
+        const factorVal=showAbs?{...t.factor,num:-t.factor.num}:t.factor;
+        const factor=document.createElement('div'); factor.className='factor monomio'; factor.innerText=monoText({num:factorVal.num,den:factorVal.den,x:false});
         factor.draggable=true;
         factor.addEventListener('dragstart',ev=>{factor.classList.add('factorBusy'); ev.dataTransfer.setData('application/json', JSON.stringify({kind:'factor',side:id,gidx:i}));});
         factor.addEventListener('dragend',()=>factor.classList.remove('factorBusy'));
@@ -243,7 +251,8 @@ function render(){
         g.appendChild(factor); g.appendChild(open); g.appendChild(inner); g.appendChild(close); c.appendChild(g);
       }else{
         const n=document.createElement('div'); n.className='monomio'; n.dataset.side=id; n.dataset.index=String(i);
-        n.innerText=monoText(t,false); n.draggable=true;
+        const monoVal=showAbs?{...t,num:-t.num}:t;
+        n.innerText=monoText(monoVal,false); n.draggable=true;
         n.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('application/json', JSON.stringify({kind:'mono',side:id,index:i}));});
         c.appendChild(n);
       }
