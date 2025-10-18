@@ -16,6 +16,8 @@ main{display:flex;flex-direction:column;gap:1.5rem;align-items:center;padding:1r
 .systemHeader .smallBtn{border:none;border-radius:12px;padding:.55rem .85rem;background:#64748b;color:#fff;cursor:pointer}
 .systemHeader .smallBtn:hover{background:#475569}
 
+.systemWrapper{display:flex;gap:1rem;align-items:stretch;justify-content:center;width:100%;max-width:1200px}
+.systemBrace{font-size:5rem;line-height:1;color:var(--primary);display:flex;align-items:center;padding-left:.4rem}
 .system-grid{display:flex;flex-wrap:wrap;gap:1.2rem;justify-content:center;width:100%;max-width:1200px}
 .app{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;min-width:min(92vw,360px);max-width:1100px}
 .app .board{display:flex;flex-direction:column;gap:1rem;align-items:center;flex:1 1 360px}
@@ -65,6 +67,10 @@ svg{width:100%;height:120px}
 .segment{stroke:#16a34a;stroke-width:6}
 .fill{fill:#16a34a}
 .hollow{fill:#fff;stroke:#16a34a;stroke-width:3}
+.valueMarker{fill:#fff;stroke:#0f172a;stroke-width:3}
+.valueLabel{fill:#0f172a;font-size:14px}
+.solutionSegment{stroke:#16a34a;stroke-width:6;stroke-linecap:round}
+.overlapFill{fill:#bbf7d0;opacity:.5}
 
 .divisionOverlay{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:1.2rem}
 .divisionOverlay.show{display:flex}
@@ -101,6 +107,7 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
 @media (max-width:640px){
   .ineq{font-size:2rem}
   .monomio,.group .factor{font-size:1.6rem}
+  .systemBrace{font-size:3.5rem;padding-left:0}
 }
 </style>
 </head>
@@ -111,132 +118,135 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
     <button id="newSystem" class="smallBtn">Nuovo sistema</button>
   </div>
 
-  <div class="system-grid">
-    <div class="app" data-app="1">
-      <section class="card board" aria-label="Disequazione 1">
-        <h2 style="font-size:1.15rem;text-align:center">Disequazione 1</h2>
-        <div class="ineq">
-          <div class="membro" data-side="A"></div>
-          <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
-          <div class="membro" data-side="B"></div>
-        </div>
-        <div class="coach">
-          <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
-          <div class="actionRow">
-            <button class="bigAction actTransport">Sposta (cambio segno)</button>
-            <button class="bigAction actSum">Somma due termini uguali</button>
-            <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
-            <button class="bigAction actApply">Applica mossa suggerita</button>
+  <div class="systemWrapper">
+    <div class="systemBrace" aria-hidden="true">{</div>
+    <div class="system-grid">
+      <div class="app" data-app="1">
+        <section class="card board" aria-label="Disequazione 1">
+          <h2 style="font-size:1.15rem;text-align:center">Disequazione 1</h2>
+          <div class="ineq">
+            <div class="membro" data-side="A"></div>
+            <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
+            <div class="membro" data-side="B"></div>
           </div>
-          <div class="solution">
-            <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
-            <div class="intervalText"></div>
+          <div class="coach">
+            <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
+            <div class="actionRow">
+              <button class="bigAction actTransport">Sposta (cambio segno)</button>
+              <button class="bigAction actSum">Somma due termini uguali</button>
+              <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
+              <button class="bigAction actApply">Applica mossa suggerita</button>
+            </div>
+            <div class="solution">
+              <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="intervalText"></div>
+            </div>
           </div>
-        </div>
-        <div class="utility">
-          <button class="smallBtn undo">↶ Undo</button>
-          <button class="smallBtn redo">↷ Redo</button>
-          <button class="smallBtn newExercise">Nuova disequazione</button>
-        </div>
-        <div class="msg" aria-live="polite"></div>
-      </section>
-      <section class="card historyPanel" aria-label="Passaggi disequazione 1">
-        <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
-        <div class="history"></div>
-      </section>
-      <div class="divisionOverlay" aria-hidden="true">
-        <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
-          <h3 class="divisionTitle">Divisione per isolare x</h3>
-          <p class="divisionPrompt"></p>
-          <div class="divisionInfo"></div>
-          <div class="divisionDisplay" aria-live="polite">—</div>
-          <div class="divisionMessage" role="alert"></div>
-          <div class="divisionKeypad">
-            <button type="button" data-key="7">7</button>
-            <button type="button" data-key="8">8</button>
-            <button type="button" data-key="9">9</button>
-            <button type="button" data-key="/">/</button>
-            <button type="button" data-key="4">4</button>
-            <button type="button" data-key="5">5</button>
-            <button type="button" data-key="6">6</button>
-            <button type="button" data-key="-">-</button>
-            <button type="button" data-key="1">1</button>
-            <button type="button" data-key="2">2</button>
-            <button type="button" data-key="3">3</button>
-            <button type="button" data-action="clear">C</button>
-            <button type="button" data-action="sign">±</button>
-            <button type="button" data-key="0">0</button>
-            <button type="button" data-action="back">⌫</button>
-            <span class="keypadSpacer"></span>
+          <div class="utility">
+            <button class="smallBtn undo">↶ Undo</button>
+            <button class="smallBtn redo">↷ Redo</button>
+            <button class="smallBtn newExercise">Nuova disequazione</button>
           </div>
-          <div class="divisionActions">
-            <button type="button" class="divisionConfirm">Conferma</button>
-            <button type="button" class="divisionCancel">Annulla</button>
+          <div class="msg" aria-live="polite"></div>
+        </section>
+        <section class="card historyPanel" aria-label="Passaggi disequazione 1">
+          <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
+          <div class="history"></div>
+        </section>
+        <div class="divisionOverlay" aria-hidden="true">
+          <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
+            <h3 class="divisionTitle">Divisione per isolare x</h3>
+            <p class="divisionPrompt"></p>
+            <div class="divisionInfo"></div>
+            <div class="divisionDisplay" aria-live="polite">—</div>
+            <div class="divisionMessage" role="alert"></div>
+            <div class="divisionKeypad">
+              <button type="button" data-key="7">7</button>
+              <button type="button" data-key="8">8</button>
+              <button type="button" data-key="9">9</button>
+              <button type="button" data-key="/">/</button>
+              <button type="button" data-key="4">4</button>
+              <button type="button" data-key="5">5</button>
+              <button type="button" data-key="6">6</button>
+              <button type="button" data-key="-">-</button>
+              <button type="button" data-key="1">1</button>
+              <button type="button" data-key="2">2</button>
+              <button type="button" data-key="3">3</button>
+              <button type="button" data-action="clear">C</button>
+              <button type="button" data-action="sign">±</button>
+              <button type="button" data-key="0">0</button>
+              <button type="button" data-action="back">⌫</button>
+              <span class="keypadSpacer"></span>
+            </div>
+            <div class="divisionActions">
+              <button type="button" class="divisionConfirm">Conferma</button>
+              <button type="button" class="divisionCancel">Annulla</button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="app" data-app="2">
-      <section class="card board" aria-label="Disequazione 2">
-        <h2 style="font-size:1.15rem;text-align:center">Disequazione 2</h2>
-        <div class="ineq">
-          <div class="membro" data-side="A"></div>
-          <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
-          <div class="membro" data-side="B"></div>
-        </div>
-        <div class="coach">
-          <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
-          <div class="actionRow">
-            <button class="bigAction actTransport">Sposta (cambio segno)</button>
-            <button class="bigAction actSum">Somma due termini uguali</button>
-            <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
-            <button class="bigAction actApply">Applica mossa suggerita</button>
+      <div class="app" data-app="2">
+        <section class="card board" aria-label="Disequazione 2">
+          <h2 style="font-size:1.15rem;text-align:center">Disequazione 2</h2>
+          <div class="ineq">
+            <div class="membro" data-side="A"></div>
+            <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
+            <div class="membro" data-side="B"></div>
           </div>
-          <div class="solution">
-            <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
-            <div class="intervalText"></div>
+          <div class="coach">
+            <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
+            <div class="actionRow">
+              <button class="bigAction actTransport">Sposta (cambio segno)</button>
+              <button class="bigAction actSum">Somma due termini uguali</button>
+              <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
+              <button class="bigAction actApply">Applica mossa suggerita</button>
+            </div>
+            <div class="solution">
+              <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="intervalText"></div>
+            </div>
           </div>
-        </div>
-        <div class="utility">
-          <button class="smallBtn undo">↶ Undo</button>
-          <button class="smallBtn redo">↷ Redo</button>
-          <button class="smallBtn newExercise">Nuova disequazione</button>
-        </div>
-        <div class="msg" aria-live="polite"></div>
-      </section>
-      <section class="card historyPanel" aria-label="Passaggi disequazione 2">
-        <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
-        <div class="history"></div>
-      </section>
-      <div class="divisionOverlay" aria-hidden="true">
-        <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
-          <h3 class="divisionTitle">Divisione per isolare x</h3>
-          <p class="divisionPrompt"></p>
-          <div class="divisionInfo"></div>
-          <div class="divisionDisplay" aria-live="polite">—</div>
-          <div class="divisionMessage" role="alert"></div>
-          <div class="divisionKeypad">
-            <button type="button" data-key="7">7</button>
-            <button type="button" data-key="8">8</button>
-            <button type="button" data-key="9">9</button>
-            <button type="button" data-key="/">/</button>
-            <button type="button" data-key="4">4</button>
-            <button type="button" data-key="5">5</button>
-            <button type="button" data-key="6">6</button>
-            <button type="button" data-key="-">-</button>
-            <button type="button" data-key="1">1</button>
-            <button type="button" data-key="2">2</button>
-            <button type="button" data-key="3">3</button>
-            <button type="button" data-action="clear">C</button>
-            <button type="button" data-action="sign">±</button>
-            <button type="button" data-key="0">0</button>
-            <button type="button" data-action="back">⌫</button>
-            <span class="keypadSpacer"></span>
+          <div class="utility">
+            <button class="smallBtn undo">↶ Undo</button>
+            <button class="smallBtn redo">↷ Redo</button>
+            <button class="smallBtn newExercise">Nuova disequazione</button>
           </div>
-          <div class="divisionActions">
-            <button type="button" class="divisionConfirm">Conferma</button>
-            <button type="button" class="divisionCancel">Annulla</button>
+          <div class="msg" aria-live="polite"></div>
+        </section>
+        <section class="card historyPanel" aria-label="Passaggi disequazione 2">
+          <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
+          <div class="history"></div>
+        </section>
+        <div class="divisionOverlay" aria-hidden="true">
+          <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
+            <h3 class="divisionTitle">Divisione per isolare x</h3>
+            <p class="divisionPrompt"></p>
+            <div class="divisionInfo"></div>
+            <div class="divisionDisplay" aria-live="polite">—</div>
+            <div class="divisionMessage" role="alert"></div>
+            <div class="divisionKeypad">
+              <button type="button" data-key="7">7</button>
+              <button type="button" data-key="8">8</button>
+              <button type="button" data-key="9">9</button>
+              <button type="button" data-key="/">/</button>
+              <button type="button" data-key="4">4</button>
+              <button type="button" data-key="5">5</button>
+              <button type="button" data-key="6">6</button>
+              <button type="button" data-key="-">-</button>
+              <button type="button" data-key="1">1</button>
+              <button type="button" data-key="2">2</button>
+              <button type="button" data-key="3">3</button>
+              <button type="button" data-action="clear">C</button>
+              <button type="button" data-action="sign">±</button>
+              <button type="button" data-key="0">0</button>
+              <button type="button" data-action="back">⌫</button>
+              <span class="keypadSpacer"></span>
+            </div>
+            <div class="divisionActions">
+              <button type="button" class="divisionConfirm">Conferma</button>
+              <button type="button" class="divisionCancel">Annulla</button>
+            </div>
           </div>
         </div>
       </div>
@@ -998,88 +1008,6 @@ function formatInterval(interval){
   return `${openLeft}${left}, ${right}${openRight}`;
 }
 
-function drawHalfLine(svg,y,range,label){
-  const w=800,margin=60,axisY=y;
-  const axis=lineSvg(margin,w-margin,axisY,axisY,'axis');
-  svg.appendChild(axis);
-  const textLabel=labelSvg(20,axisY+4,label);
-  svg.appendChild(textLabel);
-  const center=w/2;
-  const right=(range.op==='>'||range.op==='≥');
-  const inclusive=right?(range.op==='≥'):(range.op==='≤');
-  const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-  dot.setAttribute('cx',center);
-  dot.setAttribute('cy',axisY);
-  dot.setAttribute('r',8);
-  dot.setAttribute('class',inclusive?'fill':'hollow');
-  svg.appendChild(dot);
-  svg.appendChild(lineSvg(right?center:margin+5,right?w-margin-5:center,axisY,axisY,'segment'));
-  const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-  tri.setAttribute('points',right?`${w-margin+16},${axisY} ${w-margin},${axisY-10} ${w-margin},${axisY+10}`:`${margin-16},${axisY} ${margin},${axisY-10} ${margin},${axisY+10}`);
-  tri.setAttribute('fill','#16a34a');
-  svg.appendChild(tri);
-  const valueText=labelSvg(center,axisY-16,fracToString(range.value));
-  valueText.setAttribute('text-anchor','middle');
-  svg.appendChild(valueText);
-}
-
-function drawInterval(svg,y,interval,label){
-  const w=800,margin=60,axisY=y;
-  svg.appendChild(lineSvg(margin,w-margin,axisY,axisY,'axis'));
-  svg.appendChild(labelSvg(20,axisY+4,label));
-  if(interval.empty){
-    const txt=document.createElementNS('http://www.w3.org/2000/svg','text');
-    txt.setAttribute('x',w/2);
-    txt.setAttribute('y',axisY-4);
-    txt.setAttribute('class','noSolution');
-    txt.textContent='∅';
-    svg.appendChild(txt);
-    return;
-  }
-  const fromX=interval.from?mapToLine(interval.from,w,margin):margin;
-  const toX=interval.to?mapToLine(interval.to,w,margin):w-margin;
-  const segment=document.createElementNS('http://www.w3.org/2000/svg','line');
-  segment.setAttribute('x1',fromX);
-  segment.setAttribute('x2',toX);
-  segment.setAttribute('y1',axisY);
-  segment.setAttribute('y2',axisY);
-  segment.setAttribute('class','segment');
-  svg.appendChild(segment);
-  if(interval.from){
-    const leftDot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    leftDot.setAttribute('cx',fromX);
-    leftDot.setAttribute('cy',axisY);
-    leftDot.setAttribute('r',8);
-    leftDot.setAttribute('class',interval.fromInclusive?'fill':'hollow');
-    svg.appendChild(leftDot);
-  }else{
-    const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    tri.setAttribute('points',`${margin-16},${axisY} ${margin},${axisY-10} ${margin},${axisY+10}`);
-    tri.setAttribute('fill','#16a34a');
-    svg.appendChild(tri);
-  }
-  if(interval.to){
-    const rightDot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    rightDot.setAttribute('cx',toX);
-    rightDot.setAttribute('cy',axisY);
-    rightDot.setAttribute('r',8);
-    rightDot.setAttribute('class',interval.toInclusive?'fill':'hollow');
-    svg.appendChild(rightDot);
-  }else{
-    const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    tri.setAttribute('points',`${w-margin+16},${axisY} ${w-margin},${axisY-10} ${w-margin},${axisY+10}`);
-    tri.setAttribute('fill','#16a34a');
-    svg.appendChild(tri);
-  }
-  const info=document.createElementNS('http://www.w3.org/2000/svg','text');
-  info.setAttribute('x',w/2);
-  info.setAttribute('y',axisY-16);
-  info.setAttribute('text-anchor','middle');
-  info.setAttribute('font-size','16');
-  info.textContent=formatInterval(interval);
-  svg.appendChild(info);
-}
-
 function labelSvg(x,y,text){const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('class','label');t.textContent=text;return t;}
 function lineSvg(x1,x2,y1,y2,cls){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',x1);l.setAttribute('x2',x2);l.setAttribute('y1',y1);l.setAttribute('y2',y2);l.setAttribute('class',cls);return l;}
 
@@ -1095,18 +1023,139 @@ function updateSystemGraph(){
   const svg=document.getElementById('systemSvg');
   const text=document.getElementById('systemText');
   svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  const w=800;
+  const margin=70;
+  const rightBound=w-margin;
+  const topY=60;
+  const rowGap=60;
+  const rowValues=[topY,topY+rowGap,topY+rowGap*2];
+  const highlightTop=rowValues[1]-18;
+  const highlightHeight=rowGap+36;
+  const background=document.createElementNS(ns,'g');
+  svg.appendChild(background);
+
   const range1=app1.isSolved()?{value:app1.solutionValue(),op:app1.getOperator()}:null;
   const range2=app2.isSolved()?{value:app2.solutionValue(),op:app2.getOperator()}:null;
-  if(range1) drawHalfLine(svg,60,range1,'Ineq. 1');
-  if(range2) drawHalfLine(svg,130,range2,'Ineq. 2');
+  const interval1=range1?halfLineToInterval(range1):null;
+  const interval2=range2?halfLineToInterval(range2):null;
+  let inter=null;
   if(range1&&range2){
-    const interval1=halfLineToInterval(range1);
-    const interval2=halfLineToInterval(range2);
-    const inter=intersectIntervals(interval1,interval2);
-    drawInterval(svg,200,inter,'Sistema');
-    text.textContent='Soluzione del sistema: '+formatInterval(inter);
+    inter=intersectIntervals(interval1,interval2);
+    if(!inter.empty){
+      const start=inter.from?mapToLine(inter.from,w,margin):margin;
+      const end=inter.to?mapToLine(inter.to,w,margin):rightBound;
+      let highlightStart=Math.min(start,end);
+      let highlightEnd=Math.max(start,end);
+      let highlightWidth=Math.max(0,highlightEnd-highlightStart);
+      if(highlightWidth===0){
+        highlightStart-=6;
+        highlightWidth=12;
+      }
+      const maxStart=rightBound-highlightWidth;
+      highlightStart=Math.max(margin,Math.min(highlightStart,maxStart));
+      if(highlightStart+highlightWidth>rightBound){
+        highlightWidth=rightBound-highlightStart;
+      }
+      if(highlightWidth>0){
+        const rect=document.createElementNS(ns,'rect');
+        rect.setAttribute('x',highlightStart);
+        rect.setAttribute('y',highlightTop);
+        rect.setAttribute('width',highlightWidth);
+        rect.setAttribute('height',highlightHeight);
+        rect.setAttribute('class','overlapFill');
+        background.appendChild(rect);
+      }
+    }
+  }
+
+  drawAxis(rowValues[0],'Valori di confronto');
+  if(range1) drawMarker(range1,'Diseq. 1',-14);
+  if(range2) drawMarker(range2,'Diseq. 2',20);
+  drawSolutionRow(rowValues[1],interval1,'Diseq. 1');
+  drawSolutionRow(rowValues[2],interval2,'Diseq. 2');
+
+  if(range1&&range2){
+    if(inter.empty){
+      text.textContent='Soluzione del sistema: ∅';
+    }else{
+      text.textContent='Soluzione del sistema: '+formatInterval(inter);
+    }
   }else{
     text.textContent='Risolvere entrambe le disequazioni per visualizzare la soluzione del sistema.';
+  }
+
+  function drawAxis(y,label){
+    svg.appendChild(lineSvg(margin,rightBound,y,y,'axis'));
+    const lbl=labelSvg(32,y+4,label);
+    svg.appendChild(lbl);
+  }
+
+  function drawMarker(range,label,offset){
+    const x=mapToLine(range.value,w,margin);
+    const marker=document.createElementNS(ns,'circle');
+    marker.setAttribute('cx',x);
+    marker.setAttribute('cy',rowValues[0]);
+    marker.setAttribute('r',7);
+    marker.setAttribute('class','valueMarker');
+    svg.appendChild(marker);
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',x);
+    t.setAttribute('y',rowValues[0]+offset);
+    t.setAttribute('class','valueLabel');
+    t.setAttribute('text-anchor','middle');
+    t.textContent=`${label}: ${fracToString(range.value)}`;
+    svg.appendChild(t);
+  }
+
+  function drawSolutionRow(y,interval,label){
+    svg.appendChild(lineSvg(margin,rightBound,y,y,'axis'));
+    svg.appendChild(labelSvg(32,y+4,label));
+    if(!interval){
+      return;
+    }
+    if(interval.empty){
+      const txt=document.createElementNS(ns,'text');
+      txt.setAttribute('x',w/2);
+      txt.setAttribute('y',y-4);
+      txt.setAttribute('class','noSolution');
+      txt.textContent='∅';
+      svg.appendChild(txt);
+      return;
+    }
+    const start=interval.from?mapToLine(interval.from,w,margin):margin;
+    const end=interval.to?mapToLine(interval.to,w,margin):rightBound;
+    svg.appendChild(lineSvg(start,end,y,y,'solutionSegment'));
+    if(interval.from){
+      svg.appendChild(endpoint(start,y,interval.fromInclusive));
+    }else{
+      svg.appendChild(arrow(y,true));
+    }
+    if(interval.to){
+      svg.appendChild(endpoint(end,y,interval.toInclusive));
+    }else{
+      svg.appendChild(arrow(y,false));
+    }
+  }
+
+  function endpoint(x,y,inclusive){
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',x);
+    c.setAttribute('cy',y);
+    c.setAttribute('r',8);
+    c.setAttribute('class',inclusive?'fill':'hollow');
+    return c;
+  }
+
+  function arrow(y,left){
+    const poly=document.createElementNS(ns,'polygon');
+    if(left){
+      poly.setAttribute('points',`${margin-18},${y} ${margin},${y-12} ${margin},${y+12}`);
+    }else{
+      poly.setAttribute('points',`${rightBound+18},${y} ${rightBound},${y-12} ${rightBound},${y+12}`);
+    }
+    poly.setAttribute('fill','#16a34a');
+    return poly;
   }
 }
 
