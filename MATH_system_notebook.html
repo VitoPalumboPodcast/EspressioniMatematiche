@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Disequazioni lineari – Sistema (modalità quaderno)</title>
+<style>
+:root{--bg:#f3f7fd;--card:#fff;--primary:#132b4a;--accent:#2ecc71;--accentDark:#27ae60;--pulse:#ffb300;--outline:#0ea5e9}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--primary)}
+main{display:flex;flex-direction:column;gap:1.5rem;align-items:center;padding:1rem}
+.card{background:var(--card);border-radius:16px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:1rem}
+
+.systemHeader{display:flex;gap:.75rem;flex-wrap:wrap;justify-content:center;align-items:center}
+.systemHeader h1{font-size:1.45rem}
+.systemHeader .smallBtn{border:none;border-radius:12px;padding:.55rem .85rem;background:#64748b;color:#fff;cursor:pointer}
+.systemHeader .smallBtn:hover{background:#475569}
+
+.classicView{display:flex;flex-direction:column;gap:1.2rem;align-items:center;width:100%;max-width:900px;text-align:center}
+.classicSystem{display:flex;gap:1rem;align-items:center;justify-content:center;font-size:2.2rem}
+.classicBrace{font-size:5rem;line-height:1;color:var(--primary);display:flex;align-items:center;padding-left:.4rem}
+.classicLines{display:flex;flex-direction:column;gap:1rem;align-items:flex-start}
+.classicIneq{display:flex;align-items:center;gap:.8rem;font-variant-numeric:tabular-nums}
+.classicSide{display:inline-flex;align-items:center;gap:.35rem}
+.classicOp{font-size:2.4rem;min-width:2.8rem;text-align:center;font-weight:600;color:var(--primary)}
+.bigStart{border:none;border-radius:18px;padding:.95rem 1.6rem;background:var(--accent);color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 10px 24px rgba(46,204,113,.25)}
+.bigStart:hover{background:var(--accentDark)}
+
+.hiddenSection{display:none !important}
+
+#interactiveArea{width:100%;max-width:1200px;display:flex;flex-direction:column;gap:1.5rem;align-items:center}
+.tabBar{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.tabButton{border:none;border-radius:14px;padding:.6rem 1.1rem;background:#cbd5e1;color:#0f172a;font-size:1rem;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.tabButton:hover{background:#94a3b8}
+.tabButton.active{background:var(--accent);color:#fff;transform:translateY(-1px);box-shadow:0 6px 16px rgba(46,204,113,.35)}
+
+.apps{width:100%;display:flex;justify-content:center}
+.app{display:none;flex-wrap:wrap;gap:1rem;justify-content:center;width:100%;max-width:1100px}
+.app.activeApp{display:flex}
+.app .board{display:flex;flex-direction:column;gap:1rem;align-items:center;flex:1 1 360px}
+.app .historyPanel{min-width:280px;max-width:540px}
+.app .history{max-height:70vh;overflow:auto;font-size:1.02rem;line-height:1.35}
+.step{border-left:5px solid #0ea5e9;padding:.55rem .7rem;margin:.6rem 0;background:#fff;border-radius:12px}
+.step.current{border-color:#22c55e;background:#f0fff6}
+.step .guide{display:block;margin-top:.25rem;color:#475569;font-size:.92rem}
+
+.ineq{display:flex;align-items:center;gap:1.4rem;font-size:2.4rem}
+.membro{display:flex;gap:.6rem;min-height:4.8rem;min-width:12rem;border:2px dashed #cbd5e1;border-radius:14px;align-items:center;justify-content:center;flex-wrap:wrap}
+.membro:empty::before{content:"0";color:#64748b}
+.monomio,.group .factor{background:#fff;border:2px solid #0f172a;border-radius:14px;padding:.55rem .85rem;user-select:none;cursor:grab;font-size:1.9rem;min-width:3.4rem;text-align:center}
+.group{display:inline-flex;align-items:flex-start;gap:.45rem;padding:.35rem .5rem;flex-wrap:nowrap}
+.group .par{font-weight:500;color:#334155;font-size:2rem;line-height:1;align-self:center}
+.groupInner{display:inline-flex;align-items:flex-start;white-space:nowrap;font-variant-numeric:tabular-nums}
+.innerTerm{display:inline-block;transition:opacity .3s}
+.innerTerm.done{opacity:.35}
+.sep{padding:0 .25rem}
+.focus{outline:4px solid var(--outline);box-shadow:0 0 0 6px rgba(14,165,233,.15)}
+.suggest{outline:3px dashed var(--pulse);box-shadow:0 0 0 6px rgba(255,179,0,.15)}
+.bad{background:#ffe1e1}
+.factorBusy{opacity:.35}
+
+.haloGreen{animation:halo 1.5s ease-out 1}
+@keyframes halo{0%{box-shadow:0 0 0 10px rgba(34,197,94,.35)}70%{box-shadow:0 0 0 26px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+.flashOp{animation:borderFlash .9s ease-in-out 2}
+@keyframes borderFlash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}100%{box-shadow:0 0 0 16px rgba(34,197,94,0)}}
+
+.coach{display:flex;flex-direction:column;gap:.6rem;align-items:center;text-align:center}
+.bigHint{font-size:1.3rem;line-height:1.35;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:.7rem 1rem;max-width:980px}
+.actionRow{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.bigAction{display:none;border:none;border-radius:16px;padding:.9rem 1.2rem;background:var(--accent);color:#fff;font-size:1.05rem;cursor:pointer}
+.bigAction:hover{background:var(--accentDark)}
+.pulseGlow{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,179,0,.65)}70%{box-shadow:0 0 0 22px rgba(255,179,0,0)}100%{box-shadow:0 0 0 0 rgba(255,179,0,0)}}
+
+.utility{display:flex;gap:.5rem;align-items:center;justify-content:center}
+.smallBtn{border:none;border-radius:12px;padding:.45rem .65rem;background:#64748b;color:#fff;cursor:pointer}
+.smallBtn:hover{background:#475569}
+.msg{min-height:1.2rem;color:#0f172a;text-align:center}
+
+.solution{display:none;margin-top:.8rem;width:100%;max-width:1000px}
+.intervalText{margin-top:.35rem;text-align:center;font-size:1.1rem}
+svg{width:100%;height:120px}
+.axis{stroke:#0f172a;stroke-width:2}
+.segment{stroke:#16a34a;stroke-width:6}
+.fill{fill:#16a34a}
+.hollow{fill:#fff;stroke:#16a34a;stroke-width:3}
+.valueMarker{fill:#fff;stroke:#0f172a;stroke-width:3}
+.valueLabel{fill:#0f172a;font-size:14px}
+.solutionSegment{stroke:#16a34a;stroke-width:6;stroke-linecap:round}
+.overlapFill{fill:#bbf7d0;opacity:.5}
+
+.divisionOverlay{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:1.2rem}
+.divisionOverlay.show{display:flex}
+.divisionPanel{background:#fff;border-radius:18px;box-shadow:0 18px 38px rgba(15,23,42,.25);max-width:360px;width:100%;padding:1.2rem;display:flex;flex-direction:column;gap:.85rem}
+.divisionPanel h3{font-size:1.25rem;color:#0f172a;text-align:center}
+.divisionPrompt{font-size:1.02rem;color:#1f2937;text-align:center;line-height:1.35}
+.divisionInfo{font-size:.95rem;color:#b91c1c;text-align:center;min-height:1.2rem}
+.divisionDisplay{font-size:2rem;font-variant-numeric:tabular-nums;text-align:center;border:2px dashed #94a3b8;border-radius:14px;padding:.6rem 1rem;min-height:3.1rem;color:#0f172a;background:#f8fafc}
+.divisionMessage{min-height:1.25rem;text-align:center;font-size:.95rem;color:#dc2626}
+.divisionKeypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem}
+.divisionKeypad button{border:none;border-radius:12px;padding:.7rem 0;background:#e2e8f0;color:#0f172a;font-size:1.1rem;font-weight:600;cursor:pointer;transition:background .2s ease,transform .2s ease}
+.divisionKeypad button:active{transform:scale(.97)}
+.divisionKeypad button:hover{background:#cbd5f5}
+.keypadSpacer{pointer-events:none}
+.divisionActions{display:flex;gap:.6rem;justify-content:center}
+.divisionActions button{border:none;border-radius:14px;padding:.65rem 1.2rem;font-size:1.05rem;cursor:pointer;color:#fff;background:var(--accent)}
+.divisionActions button:hover{background:var(--accentDark)}
+.divisionActions .divisionCancel{background:#64748b}
+.divisionActions .divisionCancel:hover{background:#475569}
+
+table.systemLegend{width:100%;max-width:760px;border-collapse:collapse;text-align:left}
+table.systemLegend th{font-size:1.1rem;padding-bottom:.35rem}
+table.systemLegend td{padding:.25rem 0;font-size:1rem}
+table.systemLegend span.tag{display:inline-flex;align-items:center;gap:.35rem}
+table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;display:inline-block;background:#16a34a}
+
+.systemGraph{width:100%;max-width:1000px}
+.systemGraph svg{height:220px}
+.systemGraph .label{fill:#0f172a;font-size:14px;text-anchor:start}
+.systemGraph .noSolution{fill:#b91c1c;font-size:16px;text-anchor:middle}
+
+.drag-ghost{position:fixed;left:0;top:0;margin:0;padding:.55rem .85rem;background:#fff;border:2px solid #0f172a;border-radius:14px;font-size:1.9rem;pointer-events:none;z-index:40;transform:translate(-50%,-50%);box-shadow:0 12px 24px rgba(0,0,0,.25);transition:transform .45s ease}
+
+@media (max-width:640px){
+  .ineq{font-size:2rem}
+  .monomio,.group .factor{font-size:1.6rem}
+  .classicSystem{flex-direction:column;font-size:1.8rem}
+  .classicBrace{font-size:3.5rem;padding-left:0}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="systemHeader">
+    <h1>Sistema di disequazioni lineari</h1>
+    <button id="newSystem" class="smallBtn">Nuovo sistema</button>
+  </div>
+
+  <section class="card classicView" id="classicView" aria-label="Sistema iniziale come su quaderno">
+    <h2 style="font-size:1.2rem">Sistema iniziale</h2>
+    <div class="classicSystem">
+      <div class="classicBrace" aria-hidden="true">{</div>
+      <div class="classicLines">
+        <div class="classicIneq" data-index="1"></div>
+        <div class="classicIneq" data-index="2"></div>
+      </div>
+    </div>
+    <button id="startSolving" class="bigStart" type="button">Inizia la risoluzione guidata</button>
+  </section>
+
+  <div id="interactiveArea" class="hiddenSection" aria-live="polite">
+    <div class="tabBar" role="tablist" aria-label="Seleziona disequazione">
+      <button type="button" class="tabButton active" data-tab="1" role="tab" aria-selected="true">Disequazione 1</button>
+      <button type="button" class="tabButton" data-tab="2" role="tab" aria-selected="false">Disequazione 2</button>
+    </div>
+    <div class="apps">
+      <div class="app" data-app="1" role="tabpanel" aria-label="Disequazione 1">
+        <section class="card board">
+          <h2 style="font-size:1.15rem;text-align:center">Disequazione 1</h2>
+          <div class="ineq">
+            <div class="membro" data-side="A"></div>
+            <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
+            <div class="membro" data-side="B"></div>
+          </div>
+          <div class="coach">
+            <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
+            <div class="actionRow">
+              <button class="bigAction actTransport">Sposta (cambio segno)</button>
+              <button class="bigAction actSum">Somma due termini uguali</button>
+              <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
+              <button class="bigAction actApply">Applica mossa suggerita</button>
+            </div>
+            <div class="solution">
+              <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="intervalText"></div>
+            </div>
+          </div>
+          <div class="utility">
+            <button class="smallBtn undo">↶ Undo</button>
+            <button class="smallBtn redo">↷ Redo</button>
+            <button class="smallBtn newExercise">Nuova disequazione</button>
+          </div>
+          <div class="msg" aria-live="polite"></div>
+        </section>
+        <section class="card historyPanel" aria-label="Passaggi disequazione 1">
+          <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
+          <div class="history"></div>
+        </section>
+        <div class="divisionOverlay" aria-hidden="true">
+          <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
+            <h3 class="divisionTitle">Divisione per isolare x</h3>
+            <p class="divisionPrompt"></p>
+            <div class="divisionInfo"></div>
+            <div class="divisionDisplay" aria-live="polite">—</div>
+            <div class="divisionMessage" role="alert"></div>
+            <div class="divisionKeypad">
+              <button type="button" data-key="7">7</button>
+              <button type="button" data-key="8">8</button>
+              <button type="button" data-key="9">9</button>
+              <button type="button" data-key="/">/</button>
+              <button type="button" data-key="4">4</button>
+              <button type="button" data-key="5">5</button>
+              <button type="button" data-key="6">6</button>
+              <button type="button" data-key="-">-</button>
+              <button type="button" data-key="1">1</button>
+              <button type="button" data-key="2">2</button>
+              <button type="button" data-key="3">3</button>
+              <button type="button" data-action="clear">C</button>
+              <button type="button" data-action="sign">±</button>
+              <button type="button" data-key="0">0</button>
+              <button type="button" data-action="back">⌫</button>
+              <span class="keypadSpacer"></span>
+            </div>
+            <div class="divisionActions">
+              <button type="button" class="divisionConfirm">Conferma</button>
+              <button type="button" class="divisionCancel">Annulla</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="app" data-app="2" role="tabpanel" aria-label="Disequazione 2">
+        <section class="card board">
+          <h2 style="font-size:1.15rem;text-align:center">Disequazione 2</h2>
+          <div class="ineq">
+            <div class="membro" data-side="A"></div>
+            <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
+            <div class="membro" data-side="B"></div>
+          </div>
+          <div class="coach">
+            <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
+            <div class="actionRow">
+              <button class="bigAction actTransport">Sposta (cambio segno)</button>
+              <button class="bigAction actSum">Somma due termini uguali</button>
+              <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
+              <button class="bigAction actApply">Applica mossa suggerita</button>
+            </div>
+            <div class="solution">
+              <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
+              <div class="intervalText"></div>
+            </div>
+          </div>
+          <div class="utility">
+            <button class="smallBtn undo">↶ Undo</button>
+            <button class="smallBtn redo">↷ Redo</button>
+            <button class="smallBtn newExercise">Nuova disequazione</button>
+          </div>
+          <div class="msg" aria-live="polite"></div>
+        </section>
+        <section class="card historyPanel" aria-label="Passaggi disequazione 2">
+          <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
+          <div class="history"></div>
+        </section>
+        <div class="divisionOverlay" aria-hidden="true">
+          <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
+            <h3 class="divisionTitle">Divisione per isolare x</h3>
+            <p class="divisionPrompt"></p>
+            <div class="divisionInfo"></div>
+            <div class="divisionDisplay" aria-live="polite">—</div>
+            <div class="divisionMessage" role="alert"></div>
+            <div class="divisionKeypad">
+              <button type="button" data-key="7">7</button>
+              <button type="button" data-key="8">8</button>
+              <button type="button" data-key="9">9</button>
+              <button type="button" data-key="/">/</button>
+              <button type="button" data-key="4">4</button>
+              <button type="button" data-key="5">5</button>
+              <button type="button" data-key="6">6</button>
+              <button type="button" data-key="-">-</button>
+              <button type="button" data-key="1">1</button>
+              <button type="button" data-key="2">2</button>
+              <button type="button" data-key="3">3</button>
+              <button type="button" data-action="clear">C</button>
+              <button type="button" data-action="sign">±</button>
+              <button type="button" data-key="0">0</button>
+              <button type="button" data-action="back">⌫</button>
+              <span class="keypadSpacer"></span>
+            </div>
+            <div class="divisionActions">
+              <button type="button" class="divisionConfirm">Conferma</button>
+              <button type="button" class="divisionCancel">Annulla</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <section class="card systemGraph" aria-label="Soluzione del sistema">
+      <h2 style="font-size:1.2rem;text-align:center;margin-bottom:.4rem">Soluzione grafica del sistema</h2>
+      <svg id="systemSvg" viewBox="0 0 820 220" preserveAspectRatio="xMidYMid meet"></svg>
+      <div id="systemText" style="margin-top:.45rem;text-align:center;font-size:1.05rem"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const abs=n=>n<0?-n:n;
+const gcd=(a,b)=>{a=abs(a|0);b=abs(b|0);while(b){const t=a%b;a=b;b=t}return a||1};
+const lcm=(a,b)=>abs(a*b)/gcd(a,b);
+const normFrac=({num,den})=>{if(den===0)throw Error('Denominatore nullo');if(num===0)return{num:0,den:1};if(den<0){num=-num;den=-den;}const g=gcd(abs(num),den);return{num:num/g,den:den/g}};
+const addFrac=(a,b)=>{const den=lcm(a.den,b.den);return normFrac({num:a.num*(den/a.den)+b.num*(den/b.den),den})};
+const mulFrac=(a,b)=>normFrac({num:a.num*b.num,den:a.den*b.den});
+const flipFrac=a=>({num:-a.num,den:a.den});
+const fracToString=f=>f.den===1?''+f.num:`${f.num}/${f.den}`;
+
+function createGhost(node){
+  const r=node.getBoundingClientRect(),g=document.createElement('div');
+  g.className='drag-ghost';
+  g.style.width=r.width+'px';
+  g.style.height=r.height+'px';
+  g.style.transform=`translate(${r.left+r.width/2}px, ${r.top+r.height/2}px)`;
+  g.innerHTML=node.innerHTML;
+  document.body.appendChild(g);
+  if(node.classList.contains('factor')) node.classList.add('factorBusy');
+  return g;
+}
+function moveGhost(ghost,toRect,onDone){
+  const x=toRect.left+toRect.width/2,y=toRect.top+toRect.height/2;
+  requestAnimationFrame(()=>{
+    ghost.style.transform=`translate(${x}px, ${y}px)`;
+    ghost.addEventListener('transitionend',()=>{
+      ghost.remove();
+      document.querySelectorAll('.factorBusy').forEach(f=>f.classList.remove('factorBusy'));
+      onDone&&onDone();
+    },{once:true});
+  });
+}
+
+function intervalNotation(c,op){const v=(c.den===1?(''+c.num):(c.num+"/"+c.den));if(op==='>')return '('+v+', +∞)';if(op==='≥')return '['+v+', +∞)';if(op==='<')return '(-∞, '+v+')';if(op==='≤')return '(-∞, '+v+']';return ''}
+
+function createIneqApp(root,{onStateChange}={}){
+  const $=sel=>root.querySelector(sel);
+  const $$=sel=>root.querySelectorAll(sel);
+  const board=root.querySelector('.board');
+  const members={A:board.querySelector('.membro[data-side="A"]'),B:board.querySelector('.membro[data-side="B"]')};
+  const opText=board.querySelector('.opText');
+  const coach=board.querySelector('.coach');
+  const bigHint=coach.querySelector('.bigHint');
+  const actionButtons={
+    transport:coach.querySelector('.actTransport'),
+    sum:coach.querySelector('.actSum'),
+    divide:coach.querySelector('.actDivideA'),
+    apply:coach.querySelector('.actApply')
+  };
+  const solutionBox=coach.querySelector('.solution');
+  const numberline=coach.querySelector('.numberline');
+  const intervalText=coach.querySelector('.intervalText');
+  const msg=board.querySelector('.msg');
+  const utility={
+    undo:board.querySelector('.undo'),
+    redo:board.querySelector('.redo'),
+    newExercise:board.querySelector('.newExercise')
+  };
+  const historyBox=root.querySelector('.history');
+  const overlay=root.querySelector('.divisionOverlay');
+  const panel=overlay.querySelector('.divisionPanel');
+  const divisionUI={
+    overlay,
+    panel,
+    prompt:panel.querySelector('.divisionPrompt'),
+    info:panel.querySelector('.divisionInfo'),
+    display:panel.querySelector('.divisionDisplay'),
+    messageNode:panel.querySelector('.divisionMessage'),
+    confirmBtn:panel.querySelector('.divisionConfirm'),
+    cancelBtn:panel.querySelector('.divisionCancel'),
+    value:'',
+    target:null,
+    guided:false,
+    timers:[],
+    open(opts={}){
+      const {guided=false}=opts;
+      this.clearTimers();
+      const coeff=normFrac(sumAgg('A').ax);
+      if(coeff.num===0){
+        hint('Non c\'è un coefficiente numerico da eliminare.');
+        return;
+      }
+      this.target=coeff;
+      this.guided=guided;
+      this.value=guided?fracToString(coeff):'';
+      this.updateDisplay();
+      this.message('');
+      this.prompt.textContent=`Coefficiente davanti a x: ${fracToString(coeff)}. Scegli il numero per dividere entrambi i membri.`;
+      this.info.textContent=coeff.num<0?'Ricorda: dividendo per un numero negativo il verso della disequazione cambia.':'';
+      overlay.classList.add('show');
+      overlay.setAttribute('aria-hidden','false');
+      panel.focus();
+      hint('Scegli il numero del tastierino per dividere entrambi i membri.');
+      if(guided){
+        const str=fracToString(coeff);
+        this.timers.push(setTimeout(()=>{this.setValue(str);},220));
+        this.timers.push(setTimeout(()=>this.confirm(),900));
+      }else{
+        this.focusFirstKey();
+      }
+    },
+    close(){
+      const wasGuided=this.guided;
+      this.clearTimers();
+      overlay.classList.remove('show');
+      overlay.setAttribute('aria-hidden','true');
+      this.value='';
+      this.target=null;
+      this.guided=false;
+      this.message('');
+      if(!wasGuided) hint(nextGuideText());
+    },
+    isOpen(){return overlay.classList.contains('show');},
+    setValue(str){this.value=str;this.updateDisplay();},
+    updateDisplay(){this.display.textContent=this.value||'—';},
+    message(msg){this.messageNode.textContent=msg||'';},
+    inputKey(key){
+      if(!this.isOpen()) return;
+      if(key==='-'){this.toggleSign();return;}
+      if(key==='/'&&(this.value.includes('/')||this.value===''||this.value==='-')){
+        this.message('Inserisci prima il numeratore.');
+        return;
+      }
+      this.value+=key;
+      this.updateDisplay();
+      this.message('');
+    },
+    toggleSign(){
+      if(!this.isOpen()) return;
+      if(this.value.startsWith('-')) this.value=this.value.slice(1);
+      else this.value='-'+this.value;
+      this.updateDisplay();
+      this.message('');
+    },
+    backspace(){
+      if(!this.isOpen()) return;
+      this.value=this.value.slice(0,-1);
+      this.updateDisplay();
+      this.message('');
+    },
+    clear(){
+      if(!this.isOpen()) return;
+      this.value='';
+      this.updateDisplay();
+      this.message('');
+    },
+    focusFirstKey(){const btn=this.panel.querySelector('.divisionKeypad button');if(btn) btn.focus();},
+    clearTimers(){this.timers.forEach(t=>clearTimeout(t));this.timers=[];},
+    confirm(){
+      if(!this.target) return;
+      const parsed=parseDivisionInput(this.value);
+      if(!parsed){this.message('Inserisci un numero o una frazione valida.');return;}
+      if(parsed.num===0){this.message('Non puoi dividere per 0.');return;}
+      if(parsed.num!==this.target.num||parsed.den!==this.target.den){
+        this.message(`Per isolare x devi dividere per ${fracToString(this.target)}.`);
+        return;
+      }
+      this.close();
+      performDivision(parsed);
+    }
+  };
+
+  let state,stack=[],redo=[],haloRequest=null;
+  const deep=o=>JSON.parse(JSON.stringify(o));
+
+  function hint(t){msg.innerText=t||'';}
+
+  function simplifyOnly(){
+    for(const side of ['A','B']){
+      state[side]=state[side].map(t=>{
+        if(t.type==='group'){
+          t.factor=normFrac(t.factor);
+          t.inner=t.inner.map(m=>({...m,...normFrac(m)}));
+          return t;
+        }
+        return {...normFrac(t),x:t.x,type:'mono'};
+      }).filter(t=>t.type==='group'?t.inner.length>0:(t.num!==0||t.x));
+    }
+  }
+
+  function monoText(m,absOnly=false){
+    const sgn=m.num<0?'-':'';
+    const N=abs(m.num);
+    const coeff=(m.den===1)?(absOnly?''+N:sgn+N):(absOnly?(N+'/'+m.den):(sgn+N+'/'+m.den));
+    if(m.x){
+      if(m.den===1&&N===1) return absOnly?'x':(sgn==='-'?'-x':'x');
+      return coeff+'x';
+    }
+    return coeff;
+  }
+
+  const prettyJoin=arr=>{
+    if(!arr.length) return '0';
+    let out=monoText(arr[0],false);
+    for(let i=1;i<arr.length;i++){
+      const m=arr[i],neg=m.num<0,absTxt=monoText({...m,num:abs(m.num)},true);
+      out+=neg?' - '+absTxt:' + '+absTxt;
+    }
+    return out;
+  };
+
+  function termsWithSigns(arr){
+    const pieces=[];
+    arr.forEach((m,i)=>{
+      const maybeNum=Number(m.num);
+      const rawNum=Number.isFinite(maybeNum)?maybeNum:m.num;
+      if(i===0){
+        pieces.push({type:'term',mono:{...m,num:rawNum},idx:i});
+      }else{
+        const neg=rawNum<0;
+        const absMono={...m,num:neg?-rawNum:rawNum};
+        pieces.push({type:'sep',text:neg?' - ':' + '});
+        pieces.push({type:'term',mono:absMono,idx:i});
+      }
+    });
+    return pieces;
+  }
+
+  function sideToText(side){
+    if(!side.length) return '0';
+    return side.map(t=>t.type==='group'
+      ? monoText({num:t.factor.num,den:t.factor.den,x:false})+'·('+prettyJoin(t.inner)+')'
+      : monoText(t,false)
+    ).join(' + ').replace(/\+\s-\s/g,' - ');
+  }
+
+  function render(){
+    for(const id of ['A','B']){
+      const container=members[id];
+      container.innerHTML='';
+      state[id].forEach((t,i)=>{
+        const isGroup=t.type==='group';
+        const isNegative=isGroup?(t.factor.num<0):(t.num<0);
+        const showAbs=i>0&&isNegative;
+        if(i>0){
+          const sep=document.createElement('span');
+          sep.className='sep';
+          sep.textContent=isNegative?' - ':' + ';
+          container.appendChild(sep);
+        }
+        if(isGroup){
+          const g=document.createElement('div');
+          g.className='group';
+          g.dataset.side=id;
+          g.dataset.index=String(i);
+          const factorVal=showAbs?{...t.factor,num:-t.factor.num}:t.factor;
+          const factor=document.createElement('div');
+          factor.className='factor monomio';
+          factor.innerText=monoText({num:factorVal.num,den:factorVal.den,x:false});
+          factor.draggable=true;
+          factor.addEventListener('dragstart',ev=>{
+            factor.classList.add('factorBusy');
+            const payload=JSON.stringify({kind:'factor',side:id,gidx:i});
+            ev.dataTransfer.effectAllowed='move';
+            ev.dataTransfer.setData('application/json',payload);
+            ev.dataTransfer.setData('text/plain',payload);
+          });
+          factor.addEventListener('dragend',()=>factor.classList.remove('factorBusy'));
+          const open=document.createElement('span');
+          open.className='par';
+          open.textContent='(';
+          const inner=document.createElement('div');
+          inner.className='groupInner';
+          const pieces=termsWithSigns(t.inner);
+          pieces.forEach(piece=>{
+            if(piece.type==='sep'){
+              const sep=document.createElement('span');
+              sep.className='sep';
+              sep.textContent=piece.text;
+              inner.appendChild(sep);
+            }else{
+              const term=document.createElement('span');
+              term.className='innerTerm'+(piece.mono.done?' done':'');
+              term.dataset.termIndex=String(piece.idx);
+              term.textContent=monoText(piece.mono,false).replace('+ -',' - ');
+              inner.appendChild(term);
+            }
+          });
+          const close=document.createElement('span');
+          close.className='par';
+          close.textContent=')';
+          g.addEventListener('dragover',ev=>{ev.preventDefault();ev.dataTransfer.dropEffect='move';});
+          g.addEventListener('drop',ev=>{
+            ev.preventDefault();
+            let data=ev.dataTransfer.getData('application/json');
+            if(!data){data=ev.dataTransfer.getData('text/plain');}
+            if(!data) return;
+            const d=JSON.parse(data);
+            if(d.kind!=='factor'||d.side!==id||d.gidx!==i) return;
+            const ghost=createGhost(factor);
+            const targetTerm=g.querySelector('.innerTerm:not(.done)');
+            const rect=targetTerm?targetTerm.getBoundingClientRect():g.getBoundingClientRect();
+            moveGhost(ghost,rect,()=>applyFactorOnce(id,i));
+          });
+          g.appendChild(factor);
+          g.appendChild(open);
+          g.appendChild(inner);
+          g.appendChild(close);
+          container.appendChild(g);
+        }else{
+          const n=document.createElement('div');
+          n.className='monomio';
+          n.dataset.side=id;
+          n.dataset.index=String(i);
+          const monoVal=showAbs?{...t,num:-t.num}:t;
+          n.innerText=monoText(monoVal,false);
+          n.draggable=true;
+          n.addEventListener('dragstart',ev=>{
+            const payload=JSON.stringify({kind:'mono',side:id,index:i});
+            ev.dataTransfer.effectAllowed='move';
+            ev.dataTransfer.setData('application/json',payload);
+            ev.dataTransfer.setData('text/plain',payload);
+          });
+          container.appendChild(n);
+        }
+      });
+    }
+    opText.innerText=state.op;
+    attachDropZones();
+    renderHistory();
+    updateFocusUI();
+    if(haloRequest){
+      const node=members[haloRequest.side].querySelector(`[data-index="${haloRequest.gidx}"]`);
+      if(node){
+        node.classList.add('haloGreen');
+        setTimeout(()=>node.classList.remove('haloGreen'),1600);
+      }
+      haloRequest=null;
+    }
+    onStateChange&&onStateChange();
+  }
+
+  function applyFactorOnce(side,gidx){
+    const g=state[side][gidx];
+    if(!g||g.type!=='group') return;
+    const already=g.inner.filter(m=>m.done).length;
+    const k=g.inner.findIndex(m=>!m.done);
+    if(k===-1) return;
+    const newMono={...mulFrac(g.inner[k],g.factor),x:g.inner[k].x,type:'mono',done:true};
+    g.inner.splice(k,1,newMono);
+    if(g.inner.every(m=>m.done)){
+      const expanded=g.inner.map(m=>({num:m.num,den:m.den,x:m.x,type:'mono'}));
+      state[side].splice(gidx,1,...expanded);
+      pushSnap('Parentesi aperta (per trascinamenti)');
+      hint('Fattore moltiplicato su tutti i termini. Parentesi aperta.');
+    }else{
+      pushSnap('Moltiplicazione: fattore × termine');
+      hint('Moltiplicazione eseguita. Ripeti sul prossimo termine nella parentesi.');
+      if(already===0) haloRequest={side,gidx};
+    }
+    render();
+  }
+
+  function attachDropZones(){
+    [members.A,members.B].forEach(container=>{
+      container.ondragover=e=>{e.preventDefault();e.dataTransfer.dropEffect='move';};
+      container.ondrop=e=>{
+        e.preventDefault();
+        let data=e.dataTransfer.getData('application/json');
+        if(!data){data=e.dataTransfer.getData('text/plain');}
+        if(!data) return;
+        const info=JSON.parse(data);
+        if(info.kind==='factor'){hint('Trascina il fattore sui termini dentro la parentesi.');return;}
+        if(info.kind!=='mono') return;
+        const from=info.side,to=container.dataset.side,index=info.index,term=state[from][index];
+        if(!term||term.type!=='mono'){hint('Apri/espandi le parentesi prima.');return;}
+        const targetNode=e.target.closest('.monomio');
+        if(from===to){
+          if(!targetNode){hint('Per sommare: trascina sopra un altro termine uguale.');return;}
+          const ontoIdx=Number(targetNode.dataset.index),arr=state[to],a=arr[index],b=arr[ontoIdx];
+          if(!a||!b||a.type!=='mono'||b.type!=='mono'||a.x!==b.x){
+            hint('Questi due non si sommano.');
+            targetNode.classList.add('bad');
+            setTimeout(()=>targetNode.classList.remove('bad'),450);
+            return;
+          }
+          const onto=Math.min(index,ontoIdx),fromIdx=Math.max(index,ontoIdx);
+          arr[onto]={...addFrac(a,b),x:a.x,type:'mono'};
+          arr.splice(fromIdx,1);
+          simplifyOnly();
+          pushSnap('Somma per trascinamento');
+          render();
+          hint('Somma eseguita.');
+        }else{
+          state[from].splice(index,1);
+          state[to].push({...flipFrac(term),x:term.x,type:'mono'});
+          simplifyOnly();
+          pushSnap('Spostamento (cambio segno)');
+          render();
+          hint('Spostamento eseguito.');
+        }
+      };
+    });
+  }
+
+  const hasGroup=side=>state[side].some(t=>t.type==='group');
+  const firstGroup=side=>state[side].findIndex(t=>t.type==='group');
+  function sumAgg(side){
+    return state[side].reduce((acc,t)=>{
+      if(t.type==='mono'){
+        if(t.x) acc.ax=addFrac(acc.ax,{num:t.num,den:t.den});
+        else acc.c=addFrac(acc.c,{num:t.num,den:t.den});
+      }
+      return acc;
+    },{ax:{num:0,den:1},c:{num:0,den:1}});
+  }
+  let currentSuggestion=null;
+  function computeSuggestion(){
+    const sideG=hasGroup('A')?'A':(hasGroup('B')?'B':null);
+    if(sideG){
+      const gidx=firstGroup(sideG),g=state[sideG][gidx],k=g.inner.findIndex(m=>!m.done);
+      if(k!==-1) return{type:'mulInside',payload:{side:sideG,gidx},text:'Trascina il fattore sopra ciascun termine tra parentesi.',hi:[{side:sideG,idx:gidx}],primary:'actApply'};
+    }
+    if(state.B.some(t=>t.type==='mono'&&t.x)){
+      const idx=state.B.findIndex(t=>t.type==='mono'&&t.x);
+      return{type:'transport',payload:{from:'B',idx,to:'A'},text:'Sposta una x a sinistra.',hi:[{side:'B',idx}],primary:'actTransport'};
+    }
+    if(state.A.some(t=>t.type==='mono'&&!t.x)){
+      const idx=state.A.findIndex(t=>t.type==='mono'&&!t.x);
+      return{type:'transport',payload:{from:'A',idx,to:'B'},text:'Sposta un numero a destra.',hi:[{side:'A',idx}],primary:'actTransport'};
+    }
+    if(isSolved()) return{type:'none',payload:null,text:'Disequazione risolta! Il grafico mostra la soluzione.',hi:[],primary:null};
+    const count=(side,isX)=>state[side].filter(t=>t.type==='mono'&&(!!t.x===!!isX)).length;
+    if(count('A',true)>=2){
+      const ids=state.A.map((t,i)=>[t,i]).filter(([t])=>t.type==='mono'&&t.x).slice(0,2).map(([,i])=>i);
+      return{type:'sumTwo',payload:{side:'A',idx1:ids[0],idx2:ids[1]},text:'Somma due x a sinistra.',hi:[{side:'A',idx:ids[0]},{side:'A',idx:ids[1]}],primary:'actSum'};
+    }
+    if(count('B',false)>=2){
+      const ids=state.B.map((t,i)=>[t,i]).filter(([t])=>t.type==='mono'&&!t.x).slice(0,2).map(([,i])=>i);
+      return{type:'sumTwo',payload:{side:'B',idx1:ids[0],idx2:ids[1]},text:'Somma due numeri a destra.',hi:[{side:'B',idx:ids[0]},{side:'B',idx:ids[1]}],primary:'actSum'};
+    }
+    const A=sumAgg('A'),a=A.ax;
+    if(a.num===0) return{type:'finalCheck',payload:{},text:'È rimasto solo il confronto tra numeri.',hi:[],primary:'actApply'};
+    if(!(a.num===1&&a.den===1)) return{type:'divideA',payload:{},text:'Dividi per il numero davanti a x (se è negativo, il verso cambia).',hi:[],primary:'actDivideA'};
+    return{type:'none',payload:null,text:'Porta alla forma x ? numero. Se serve, riduci la frazione.',hi:[],primary:null};
+  }
+
+  function updateFocusUI(){
+    $$('.monomio,.group .factor').forEach(n=>n.classList.remove('suggest','focus'));
+    coach.querySelectorAll('.bigAction').forEach(b=>{b.style.display='none';b.classList.remove('pulseGlow');});
+    solutionBox.style.display='none';
+    intervalText.innerText='';
+    currentSuggestion=computeSuggestion();
+    (currentSuggestion.hi||[]).forEach(h=>{
+      const node=members[h.side].querySelector(`[data-index="${h.idx}"]`);
+      if(node) node.classList.add('suggest','focus');
+    });
+    bigHint.innerText=currentSuggestion.text||'';
+    if(currentSuggestion.primary){
+      const map={actTransport:actionButtons.transport,actSum:actionButtons.sum,actDivideA:actionButtons.divide,actApply:actionButtons.apply};
+      const b=map[currentSuggestion.primary];
+      if(b){b.style.display='inline-flex';b.classList.add('pulseGlow');}
+    }
+    if(isSolved()){
+      drawSolution();
+      solutionBox.style.display='block';
+    }
+  }
+
+  function snapshotText(st){return sideToText(st.A)+' '+st.op+' '+sideToText(st.B);}
+  function renderHistory(){
+    historyBox.innerHTML='';
+    stack.forEach((e,i)=>{
+      const d=document.createElement('div');
+      d.className='step'+(i===stack.length-1?' current':'');
+      d.innerHTML=(e.label?('<strong>'+e.label+': </strong> '):'')+snapshotText(e.state)+(e.nextGuide?`<span class="guide">Suggerimento: ${e.nextGuide}</span>`:'');
+      d.onclick=()=>{
+        while(stack.length-1>i){redo.push(stack.pop());}
+        state=deep(stack[i].state);
+        render();
+      };
+      historyBox.appendChild(d);
+    });
+    historyBox.scrollTop=historyBox.scrollHeight;
+  }
+  const nextGuideText=()=>computeSuggestion()?.text||'';
+  function pushSnap(label=''){
+    stack.push({state:deep(state),label,nextGuide:nextGuideText()});
+    redo.length=0;
+    renderHistory();
+  }
+
+  function doTransport(from,idx,to){
+    const t=state[from][idx];
+    if(!t||t.type!=='mono'){hint('Apri/espandi le parentesi prima.');return false;}
+    state[from].splice(idx,1);
+    state[to].push({...flipFrac(t),x:t.x,type:'mono'});
+    simplifyOnly();
+    pushSnap('Spostamento (cambio segno)');
+    render();
+    return true;
+  }
+
+  function doSum(side,i1,i2){
+    const arr=state[side],a=arr[i1],b=arr[i2];
+    if(!a||!b||a.type!=='mono'||b.type!=='mono'||a.x!==b.x) return false;
+    const onto=Math.min(i1,i2),from=Math.max(i1,i2);
+    arr[onto]={...addFrac(a,b),x:a.x,type:'mono'};
+    arr.splice(from,1);
+    simplifyOnly();
+    pushSnap('Somma termini uguali');
+    render();
+    return true;
+  }
+
+  function parseDivisionInput(str){
+    if(!str) return null;
+    const t=str.trim();
+    if(!t) return null;
+    if(/^[-+]?\d+$/.test(t)) return normFrac({num:Number(t),den:1});
+    const m=t.match(/^([-+]?\d+)\/([-+]?\d+)$/);
+    if(m){
+      const num=Number(m[1]),den=Number(m[2]);
+      if(den===0) return null;
+      return normFrac({num,den});
+    }
+    return null;
+  }
+
+  function performDivision(divisor){
+    flashMembers();
+    const inv={num:divisor.den,den:divisor.num};
+    for(const side of ['A','B']){
+      state[side]=state[side].map(t=>{
+        if(t.type==='mono') return {...mulFrac(t,inv),x:t.x,type:'mono'};
+        if(t.type==='group'){
+          return {
+            ...t,
+            factor:mulFrac(t.factor,inv),
+            inner:t.inner.map(m=>({...mulFrac(m,inv),x:m.x,type:m.type||'mono',done:m.done}))
+          };
+        }
+        return t;
+      });
+    }
+    if(divisor.num<0) flipOperator();
+    simplifyOnly();
+    pushSnap('Divisione per coefficiente di x');
+    render();
+    hint('Divisione eseguita.');
+  }
+
+  function flipOperator(){
+    const map={'<':'>','>':'<','≤':'≥','≥':'≤'};
+    state.op=map[state.op]||state.op;
+    opText.innerText=state.op;
+  }
+
+  function flashMembers(){
+    ['A','B'].forEach(id=>members[id].classList.add('flashOp'));
+    setTimeout(()=>['A','B'].forEach(id=>members[id].classList.remove('flashOp')),900);
+  }
+
+  function applySuggestionAnimated(){
+    const s=computeSuggestion();
+    if(!s) return;
+    if(s.type==='mulInside'){
+      const {side,gidx}=s.payload;
+      const group=members[side].querySelector(`[data-index="${gidx}"]`);
+      if(!group) return;
+      const factor=group.querySelector('.factor');
+      if(!factor) return;
+      const ghost=createGhost(factor);
+      const targetTerm=group.querySelector('.innerTerm:not(.done)');
+      const rect=targetTerm?targetTerm.getBoundingClientRect():group.getBoundingClientRect();
+      moveGhost(ghost,rect,()=>applyFactorOnce(side,gidx));
+      return;
+    }
+    if(s.type==='transport'){
+      const {from,idx,to}=s.payload;
+      const node=members[from].querySelector(`[data-index="${idx}"]`);
+      if(!node) return;
+      const ghost=createGhost(node);
+      moveGhost(ghost,members[to].getBoundingClientRect(),()=>doTransport(from,idx,to));
+      return;
+    }
+    if(s.type==='sumTwo'){
+      const {side,idx1,idx2}=s.payload;
+      const fromIdx=Math.max(idx1,idx2),ontoIdx=Math.min(idx1,idx2);
+      const node=members[side].querySelector(`[data-index="${fromIdx}"]`);
+      const onto=members[side].querySelector(`[data-index="${ontoIdx}"]`);
+      if(!node||!onto) return;
+      const ghost=createGhost(node);
+      moveGhost(ghost,onto.getBoundingClientRect(),()=>doSum(side,idx1,idx2));
+      return;
+    }
+    if(s.type==='divideA'){
+      divisionUI.target=sumAgg('A').ax;
+      divisionUI.open({guided:true});
+      return;
+    }
+    if(s.type==='finalCheck'){
+      if(isSolved()){
+        drawSolution();
+        solutionBox.style.display='block';
+      }
+      return;
+    }
+  }
+
+  actionButtons.apply.onclick=applySuggestionAnimated;
+  actionButtons.transport.onclick=()=>{if(computeSuggestion()?.type==='transport') applySuggestionAnimated();};
+  actionButtons.sum.onclick=()=>{if(computeSuggestion()?.type==='sumTwo') applySuggestionAnimated();};
+  actionButtons.divide.onclick=()=>divisionUI.open({guided:false});
+  divisionUI.confirmBtn.onclick=()=>divisionUI.confirm();
+  divisionUI.cancelBtn.onclick=()=>divisionUI.close();
+  overlay.addEventListener('click',ev=>{if(ev.target===overlay) divisionUI.close();});
+  overlay.querySelectorAll('.divisionKeypad button').forEach(btn=>{
+    const key=btn.dataset.key,action=btn.dataset.action;
+    if(key){btn.addEventListener('click',()=>divisionUI.inputKey(key));return;}
+    if(action==='clear'){btn.addEventListener('click',()=>divisionUI.clear());return;}
+    if(action==='back'){btn.addEventListener('click',()=>divisionUI.backspace());return;}
+    if(action==='sign'){btn.addEventListener('click',()=>divisionUI.toggleSign());}
+  });
+  document.addEventListener('keydown',ev=>{
+    if(!divisionUI.isOpen()) return;
+    if(ev.key>='0'&&ev.key<='9'){divisionUI.inputKey(ev.key);ev.preventDefault();return;}
+    if(ev.key==='/'){divisionUI.inputKey('/');ev.preventDefault();return;}
+    if(ev.key==='-'||ev.key==='+'){divisionUI.toggleSign();ev.preventDefault();return;}
+    if(ev.key==='Backspace'){divisionUI.backspace();ev.preventDefault();return;}
+    if(ev.key==='Escape'){divisionUI.close();ev.preventDefault();return;}
+    if(ev.key==='Enter'){divisionUI.confirm();ev.preventDefault();}
+  });
+
+  function drawSolution(){
+    numberline.innerHTML='';
+    const w=800,y=60;
+    numberline.appendChild(line(40,w-40,y,y,'axis'));
+    const c=solutionValue();
+    const v=(c.den===1?(''+c.num):(c.num+"/"+c.den));
+    const cx=w/2;
+    const right=(state.op==='>'||state.op==='≥');
+    const inclusive=right?(state.op==='≥'):(state.op==='≤');
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',cx);
+    dot.setAttribute('cy',y);
+    dot.setAttribute('r',8);
+    dot.setAttribute('class',inclusive?'fill':'hollow');
+    numberline.appendChild(dot);
+    numberline.appendChild(line(right?cx:60,right?w-60:cx,y,y,'segment'));
+    const tri=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    tri.setAttribute('points',right?`${w-44},${y} ${w-60},${y-10} ${w-60},${y+10}`:`44,${y} 60,${y-10} 60,${y+10}`);
+    tri.setAttribute('fill','#16a34a');
+    numberline.appendChild(tri);
+    numberline.appendChild(text(cx,y-16,v));
+    intervalText.innerText='Intervallo soluzione: '+intervalNotation(c,state.op);
+  }
+  function line(x1,x2,y1,y2,cls){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',x1);l.setAttribute('x2',x2);l.setAttribute('y1',y1);l.setAttribute('y2',y2);l.setAttribute('class',cls);return l;}
+  function text(x,y,t){const e=document.createElementNS('http://www.w3.org/2000/svg','text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('text-anchor','middle');e.setAttribute('font-size','16');e.textContent=t;return e;}
+
+  function isSolved(){
+    const L=state.A.filter(t=>t.type==='mono');
+    const R=state.B.filter(t=>t.type==='mono');
+    if(L.some(t=>!t.x)) return false;
+    if(R.some(t=>t.x)) return false;
+    const ax=L.filter(t=>t.x),c=R.filter(t=>!t.x);
+    if(ax.length!==1||c.length!==1) return false;
+    const a=ax[0];
+    return (a.num===1&&a.den===1);
+  }
+  function solutionValue(){
+    const c=state.B.find(t=>t.type==='mono'&&!t.x);
+    return normFrac({num:c.num,den:c.den});
+  }
+
+  function rndNZ(min=-9,max=9){let n=0;while(n===0){n=Math.floor(Math.random()*(max-min+1))+min;}return n;}
+  function mono(x){return{num:rndNZ(),den:1,x,type:'mono'};}
+  function grouped(){const factor=normFrac({num:(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*3)),den:1});const ax={num:rndNZ(),den:1,x:true,type:'mono',done:false};const b={num:rndNZ(),den:1,x:false,type:'mono',done:false};return{type:'group',factor,inner:[ax,b]};}
+  function randomSide(){return (Math.random()<0.5)?[grouped()]:[mono(true),mono(false)];}
+
+  function initIneq(){
+    state={A:randomSide(),B:randomSide(),op:['<','>','≤','≥'][Math.floor(Math.random()*4)]};
+    opText.innerText=state.op;
+    simplifyOnly();
+    stack=[];
+    redo=[];
+    pushSnap('Disequazione iniziale');
+    render();
+    hint('Trascina il fattore sui termini tra parentesi. Poi somma e sposta come suggerito.');
+  }
+
+  utility.undo.onclick=()=>{if(stack.length>1){redo.push(stack.pop());state=deep(stack[stack.length-1].state);render();}};
+  utility.redo.onclick=()=>{if(redo.length){const s=redo.pop();stack.push(s);state=deep(s.state);render();}};
+  utility.newExercise.onclick=()=>{try{initIneq();}catch(e){console.error(e);setTimeout(initIneq,0);}};
+
+  try{initIneq();}catch(e){console.error(e);setTimeout(initIneq,0);}
+
+  return {
+    reset:initIneq,
+    isSolved,
+    solutionValue,
+    getOperator:()=>state.op,
+    describe:()=>snapshotText(state),
+    getInterval:()=>({value:solutionValue(),op:state.op}),
+    state:()=>deep(state)
+  };
+}
+
+const app1=createIneqApp(document.querySelector('[data-app="1"]'),{onStateChange:updateSystemGraph});
+const app2=createIneqApp(document.querySelector('[data-app="2"]'),{onStateChange:updateSystemGraph});
+
+const classicView=document.getElementById('classicView');
+const interactiveArea=document.getElementById('interactiveArea');
+const startBtn=document.getElementById('startSolving');
+const tabButtons=Array.from(document.querySelectorAll('.tabButton'));
+const tabPanels=Array.from(document.querySelectorAll('.app'));
+let activeTab='1';
+
+function renderClassicLine(app,index){
+  const container=document.querySelector(`.classicIneq[data-index="${index}"]`);
+  if(!container) return;
+  const op=app.getOperator();
+  const desc=app.describe();
+  const split=` ${op} `;
+  if(desc.includes(split)){
+    const [left,right]=desc.split(split);
+    container.innerHTML='';
+    const leftSpan=document.createElement('span');
+    leftSpan.className='classicSide';
+    leftSpan.textContent=left;
+    const opSpan=document.createElement('span');
+    opSpan.className='classicOp';
+    opSpan.textContent=op;
+    const rightSpan=document.createElement('span');
+    rightSpan.className='classicSide';
+    rightSpan.textContent=right;
+    container.append(leftSpan,opSpan,rightSpan);
+  }else{
+    container.textContent=desc;
+  }
+}
+
+function updateClassicView(){
+  renderClassicLine(app1,1);
+  renderClassicLine(app2,2);
+}
+
+function activateTab(id){
+  activeTab=id;
+  tabButtons.forEach(btn=>{
+    const isActive=btn.dataset.tab===id;
+    btn.classList.toggle('active',isActive);
+    btn.setAttribute('aria-selected',isActive?'true':'false');
+  });
+  tabPanels.forEach(panel=>{
+    const isActive=panel.dataset.app===id;
+    panel.classList.toggle('activeApp',isActive);
+    panel.setAttribute('aria-hidden',isActive?'false':'true');
+  });
+}
+
+function showClassicView(){
+  if(classicView){
+    classicView.classList.remove('hiddenSection');
+    classicView.setAttribute('aria-hidden','false');
+  }
+  if(interactiveArea){
+    interactiveArea.classList.add('hiddenSection');
+    interactiveArea.setAttribute('aria-hidden','true');
+  }
+}
+
+function showInteractiveArea(){
+  if(classicView){
+    classicView.classList.add('hiddenSection');
+    classicView.setAttribute('aria-hidden','true');
+  }
+  if(interactiveArea){
+    interactiveArea.classList.remove('hiddenSection');
+    interactiveArea.setAttribute('aria-hidden','false');
+    try{interactiveArea.scrollIntoView({behavior:'smooth',block:'start'});}catch(e){/* scroll smooth non supportato */}
+  }
+}
+
+if(startBtn){
+  startBtn.addEventListener('click',()=>{
+    activeTab='1';
+    showInteractiveArea();
+    activateTab('1');
+  });
+}
+
+tabButtons.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const target=btn.dataset.tab||'1';
+    activateTab(target);
+  });
+});
+
+activateTab('1');
+updateClassicView();
+showClassicView();
+
+document.getElementById('newSystem').addEventListener('click',()=>{
+  app1.reset();
+  app2.reset();
+  updateSystemGraph();
+  updateClassicView();
+  activeTab='1';
+  showClassicView();
+  activateTab('1');
+});
+
+function compareFrac(a,b){return a.num*b.den-b.num*a.den;}
+function maxFrac(a,b){return compareFrac(a,b)>=0?a:b;}
+function minFrac(a,b){return compareFrac(a,b)<=0?a:b;}
+
+function halfLineToInterval(range){
+  const {value,op}=range;
+  const right=(op==='>'||op==='≥');
+  const inclusive=right?(op==='≥'):(op==='≤');
+  if(right){
+    return {from:value,fromInclusive:inclusive,to:null,toInclusive:false};
+  }
+  return {from:null,fromInclusive:false,to:value,toInclusive:inclusive};
+}
+
+function intersectIntervals(a,b){
+  const res={from:null,fromInclusive:false,to:null,toInclusive:false,empty:false};
+  res.from=a.from&&b.from?maxFrac(a.from,b.from):(a.from||b.from||null);
+  res.fromInclusive=a.from&&b.from?
+    ((compareFrac(a.from,b.from)>0)?a.fromInclusive:(compareFrac(a.from,b.from)<0?b.fromInclusive:(a.fromInclusive&&b.fromInclusive))):
+    (a.from?a.fromInclusive:b.from?b.fromInclusive:false);
+  res.to=a.to&&b.to?minFrac(a.to,b.to):(a.to||b.to||null);
+  res.toInclusive=a.to&&b.to?
+    ((compareFrac(a.to,b.to)<0)?a.toInclusive:(compareFrac(a.to,b.to)>0?b.toInclusive:(a.toInclusive&&b.toInclusive))):
+    (a.to?a.toInclusive:b.to?b.toInclusive:false);
+  if(res.from&&res.to){
+    const cmp=compareFrac(res.from,res.to);
+    if(cmp>0){res.empty=true;return res;}
+    if(cmp===0&&!res.fromInclusive&&!res.toInclusive){res.empty=true;return res;}
+  }
+  return res;
+}
+
+function formatInterval(interval){
+  if(interval.empty) return '∅';
+  const left=interval.from?fracToString(interval.from):'-∞';
+  const right=interval.to?fracToString(interval.to):'+∞';
+  const openLeft=interval.from?interval.fromInclusive?'[':'(':'(';
+  const openRight=interval.to?interval.toInclusive?']':')':')';
+  return `${openLeft}${left}, ${right}${openRight}`;
+}
+
+function labelSvg(x,y,text){const t=document.createElementNS('http://www.w3.org/2000/svg','text');t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('class','label');t.textContent=text;return t;}
+function lineSvg(x1,x2,y1,y2,cls){const l=document.createElementNS('http://www.w3.org/2000/svg','line');l.setAttribute('x1',x1);l.setAttribute('x2',x2);l.setAttribute('y1',y1);l.setAttribute('y2',y2);l.setAttribute('class',cls);return l;}
+
+function mapToLine(frac,w,margin){
+  const range=20;
+  const value=frac.num/frac.den;
+  const clamped=Math.max(-range,Math.min(range,value));
+  const ratio=(clamped+range)/(2*range);
+  return margin+ratio*(w-2*margin);
+}
+
+function updateSystemGraph(){
+  const svg=document.getElementById('systemSvg');
+  const text=document.getElementById('systemText');
+  svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  const w=800;
+  const margin=70;
+  const rightBound=w-margin;
+  const topY=60;
+  const rowGap=60;
+  const rowValues=[topY,topY+rowGap,topY+rowGap*2];
+  const highlightTop=rowValues[1]-18;
+  const highlightHeight=rowGap+36;
+  const background=document.createElementNS(ns,'g');
+  svg.appendChild(background);
+
+  const range1=app1.isSolved()?{value:app1.solutionValue(),op:app1.getOperator()}:null;
+  const range2=app2.isSolved()?{value:app2.solutionValue(),op:app2.getOperator()}:null;
+  const interval1=range1?halfLineToInterval(range1):null;
+  const interval2=range2?halfLineToInterval(range2):null;
+  let inter=null;
+  if(range1&&range2){
+    inter=intersectIntervals(interval1,interval2);
+    if(!inter.empty){
+      const start=inter.from?mapToLine(inter.from,w,margin):margin;
+      const end=inter.to?mapToLine(inter.to,w,margin):rightBound;
+      let highlightStart=Math.min(start,end);
+      let highlightEnd=Math.max(start,end);
+      let highlightWidth=Math.max(0,highlightEnd-highlightStart);
+      if(highlightWidth===0){
+        highlightStart-=6;
+        highlightWidth=12;
+      }
+      const maxStart=rightBound-highlightWidth;
+      highlightStart=Math.max(margin,Math.min(highlightStart,maxStart));
+      if(highlightStart+highlightWidth>rightBound){
+        highlightWidth=rightBound-highlightStart;
+      }
+      if(highlightWidth>0){
+        const rect=document.createElementNS(ns,'rect');
+        rect.setAttribute('x',highlightStart);
+        rect.setAttribute('y',highlightTop);
+        rect.setAttribute('width',highlightWidth);
+        rect.setAttribute('height',highlightHeight);
+        rect.setAttribute('class','overlapFill');
+        background.appendChild(rect);
+      }
+    }
+  }
+
+  drawAxis(rowValues[0],'Valori di confronto');
+  if(range1) drawMarker(range1,'Diseq. 1',-14);
+  if(range2) drawMarker(range2,'Diseq. 2',20);
+  drawSolutionRow(rowValues[1],interval1,'Diseq. 1');
+  drawSolutionRow(rowValues[2],interval2,'Diseq. 2');
+
+  if(range1&&range2){
+    if(inter.empty){
+      text.textContent='Soluzione del sistema: ∅';
+    }else{
+      text.textContent='Soluzione del sistema: '+formatInterval(inter);
+    }
+  }else{
+    text.textContent='Risolvere entrambe le disequazioni per visualizzare la soluzione del sistema.';
+  }
+
+  function drawAxis(y,label){
+    svg.appendChild(lineSvg(margin,rightBound,y,y,'axis'));
+    const lbl=labelSvg(32,y+4,label);
+    svg.appendChild(lbl);
+  }
+
+  function drawMarker(range,label,offset){
+    const x=mapToLine(range.value,w,margin);
+    const marker=document.createElementNS(ns,'circle');
+    marker.setAttribute('cx',x);
+    marker.setAttribute('cy',rowValues[0]);
+    marker.setAttribute('r',7);
+    marker.setAttribute('class','valueMarker');
+    svg.appendChild(marker);
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',x);
+    t.setAttribute('y',rowValues[0]+offset);
+    t.setAttribute('class','valueLabel');
+    t.setAttribute('text-anchor','middle');
+    t.textContent=`${label}: ${fracToString(range.value)}`;
+    svg.appendChild(t);
+  }
+
+  function drawSolutionRow(y,interval,label){
+    svg.appendChild(lineSvg(margin,rightBound,y,y,'axis'));
+    svg.appendChild(labelSvg(32,y+4,label));
+    if(!interval){
+      return;
+    }
+    if(interval.empty){
+      const txt=document.createElementNS(ns,'text');
+      txt.setAttribute('x',w/2);
+      txt.setAttribute('y',y-4);
+      txt.setAttribute('class','noSolution');
+      txt.textContent='∅';
+      svg.appendChild(txt);
+      return;
+    }
+    const start=interval.from?mapToLine(interval.from,w,margin):margin;
+    const end=interval.to?mapToLine(interval.to,w,margin):rightBound;
+    svg.appendChild(lineSvg(start,end,y,y,'solutionSegment'));
+    if(interval.from){
+      svg.appendChild(endpoint(start,y,interval.fromInclusive));
+    }else{
+      svg.appendChild(arrow(y,true));
+    }
+    if(interval.to){
+      svg.appendChild(endpoint(end,y,interval.toInclusive));
+    }else{
+      svg.appendChild(arrow(y,false));
+    }
+  }
+
+  function endpoint(x,y,inclusive){
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',x);
+    c.setAttribute('cy',y);
+    c.setAttribute('r',8);
+    c.setAttribute('class',inclusive?'fill':'hollow');
+    return c;
+  }
+
+  function arrow(y,left){
+    const poly=document.createElementNS(ns,'polygon');
+    if(left){
+      poly.setAttribute('points',`${margin-18},${y} ${margin},${y-12} ${margin},${y+12}`);
+    }else{
+      poly.setAttribute('points',`${rightBound+18},${y} ${rightBound},${y-12} ${rightBound},${y+12}`);
+    }
+    poly.setAttribute('fill','#16a34a');
+    return poly;
+  }
+}
+
+updateSystemGraph();
+</script>
+</body>
+</html>
