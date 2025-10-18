@@ -34,6 +34,26 @@ main{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;padding:1rem}
 .flashOp{animation:borderFlash .9s ease-in-out 2}
 @keyframes borderFlash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}100%{box-shadow:0 0 0 16px rgba(34,197,94,0)}}
 
+/* Divisione guidata */
+#divisionOverlay{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;z-index:60;padding:1.2rem}
+#divisionOverlay.show{display:flex}
+#divisionPanel{background:#fff;border-radius:18px;box-shadow:0 18px 38px rgba(15,23,42,.25);max-width:360px;width:100%;padding:1.2rem;display:flex;flex-direction:column;gap:.85rem}
+#divisionPanel h3{font-size:1.25rem;color:#0f172a;text-align:center}
+#divisionPrompt{font-size:1.02rem;color:#1f2937;text-align:center;line-height:1.35}
+#divisionInfo{font-size:.95rem;color:#b91c1c;text-align:center;min-height:1.2rem}
+#divisionDisplay{font-size:2rem;font-variant-numeric:tabular-nums;text-align:center;border:2px dashed #94a3b8;border-radius:14px;padding:.6rem 1rem;min-height:3.1rem;color:#0f172a;background:#f8fafc}
+#divisionMessage{min-height:1.25rem;text-align:center;font-size:.95rem;color:#dc2626}
+#divisionKeypad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.55rem}
+#divisionKeypad button{border:none;border-radius:12px;padding:.7rem 0;background:#e2e8f0;color:#0f172a;font-size:1.1rem;font-weight:600;cursor:pointer;transition:background .2s ease,transform .2s ease}
+#divisionKeypad button:active{transform:scale(.97)}
+#divisionKeypad button:hover{background:#cbd5f5}
+.keypadSpacer{pointer-events:none}
+.divisionActions{display:flex;gap:.6rem;justify-content:center}
+.divisionActions button{border:none;border-radius:14px;padding:.65rem 1.2rem;font-size:1.05rem;cursor:pointer;color:#fff;background:var(--accent)}
+.divisionActions button:hover{background:var(--accentDark)}
+.divisionActions #divisionCancel{background:#64748b}
+.divisionActions #divisionCancel:hover{background:#475569}
+
 /* Suggerimenti */
 #coach{display:flex;flex-direction:column;gap:.6rem;align-items:center;text-align:center}
 #bigHint{font-size:1.3rem;line-height:1.35;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:.7rem 1rem;max-width:980px}
@@ -112,6 +132,38 @@ svg{width:100%;height:120px}
     <div id="history"></div>
   </section>
 </main>
+
+<div id="divisionOverlay" aria-hidden="true">
+  <div id="divisionPanel" role="dialog" aria-modal="true" aria-labelledby="divisionTitle" tabindex="-1">
+    <h3 id="divisionTitle">Divisione per isolare x</h3>
+    <p id="divisionPrompt"></p>
+    <div id="divisionInfo"></div>
+    <div id="divisionDisplay" aria-live="polite">—</div>
+    <div id="divisionMessage" role="alert"></div>
+    <div id="divisionKeypad">
+      <button type="button" data-key="7">7</button>
+      <button type="button" data-key="8">8</button>
+      <button type="button" data-key="9">9</button>
+      <button type="button" data-key="/">/</button>
+      <button type="button" data-key="4">4</button>
+      <button type="button" data-key="5">5</button>
+      <button type="button" data-key="6">6</button>
+      <button type="button" data-key="-">-</button>
+      <button type="button" data-key="1">1</button>
+      <button type="button" data-key="2">2</button>
+      <button type="button" data-key="3">3</button>
+      <button type="button" data-action="clear">C</button>
+      <button type="button" data-action="sign">±</button>
+      <button type="button" data-key="0">0</button>
+      <button type="button" data-action="back">⌫</button>
+      <span class="keypadSpacer"></span>
+    </div>
+    <div class="divisionActions">
+      <button type="button" id="divisionConfirm">Conferma</button>
+      <button type="button" id="divisionCancel">Annulla</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ===== utils & frazioni ===== */
@@ -334,13 +386,115 @@ function doSum(side,i1,i2){
 }
 
 /* ===== divisioni ===== */
-function divideByCoeffA(){
-  const A=sumAgg('A'), a=A.ax; if(a.num===0) return;
+const fracToString=f=>f.den===1?''+f.num:`${f.num}/${f.den}`;
+function parseDivisionInput(str){
+  if(!str) return null;
+  const t=str.trim(); if(!t) return null;
+  if(/^[-+]?\d+$/.test(t)) return normFrac({num:Number(t),den:1});
+  const m=t.match(/^([-+]?\d+)\/([-+]?\d+)$/);
+  if(m){const num=Number(m[1]), den=Number(m[2]); if(den===0) return null; return normFrac({num,den});}
+  return null;
+}
+const divisionUI={
+  overlay:$('#divisionOverlay'),
+  panel:$('#divisionPanel'),
+  prompt:$('#divisionPrompt'),
+  info:$('#divisionInfo'),
+  display:$('#divisionDisplay'),
+  messageNode:$('#divisionMessage'),
+  value:'',
+  target:null,
+  guided:false,
+  timers:[],
+  open(opts={}){
+    const {guided=false}=opts; this.clearTimers();
+    const coeff=normFrac(sumAgg('A').ax);
+    if(coeff.num===0){hint('Non c\'è un coefficiente numerico da eliminare.'); return;}
+    this.target=coeff; this.guided=guided;
+    this.value=guided?fracToString(coeff):'';
+    this.updateDisplay(); this.message('');
+    this.prompt.innerText=`Coefficiente davanti a x: ${fracToString(coeff)}. Scegli il numero per dividere entrambi i membri.`;
+    this.info.innerText=coeff.num<0?'Ricorda: dividendo per un numero negativo il verso della disequazione cambia.':'';
+    this.overlay.classList.add('show'); this.overlay.setAttribute('aria-hidden','false');
+    this.panel.focus();
+    hint('Scegli il numero del tastierino per dividere entrambi i membri.');
+    if(guided){
+      const str=fracToString(coeff);
+      this.timers.push(setTimeout(()=>{this.setValue(str);},220));
+      this.timers.push(setTimeout(()=>this.confirm(),900));
+    }else{
+      this.focusFirstKey();
+    }
+  },
+  close(){
+    const wasGuided=this.guided;
+    this.clearTimers();
+    this.overlay.classList.remove('show');
+    this.overlay.setAttribute('aria-hidden','true');
+    this.value=''; this.target=null; this.guided=false; this.message('');
+    if(!wasGuided) hint(nextGuideText());
+  },
+  isOpen(){return this.overlay.classList.contains('show');},
+  setValue(str){this.value=str; this.updateDisplay();},
+  updateDisplay(){this.display.innerText=this.value||'—';},
+  message(msg){this.messageNode.innerText=msg||'';},
+  inputKey(key){
+    if(!this.isOpen()) return;
+    if(key==='-'){this.toggleSign(); return;}
+    if(key==='/'&& (this.value.includes('/')||this.value===''||this.value==='-')){
+      this.message('Inserisci prima il numeratore.');
+      return;
+    }
+    this.value+=key; this.updateDisplay(); this.message('');
+  },
+  toggleSign(){
+    if(!this.isOpen()) return;
+    if(this.value.startsWith('-')) this.value=this.value.slice(1);
+    else this.value='-'+this.value;
+    this.updateDisplay(); this.message('');
+  },
+  backspace(){
+    if(!this.isOpen()) return;
+    this.value=this.value.slice(0,-1);
+    this.updateDisplay(); this.message('');
+  },
+  clear(){
+    if(!this.isOpen()) return;
+    this.value=''; this.updateDisplay(); this.message('');
+  },
+  focusFirstKey(){const btn=this.panel.querySelector('#divisionKeypad button'); if(btn) btn.focus();},
+  clearTimers(){this.timers.forEach(t=>clearTimeout(t)); this.timers=[];},
+  confirm(){
+    if(!this.target) return;
+    const parsed=parseDivisionInput(this.value);
+    if(!parsed){this.message('Inserisci un numero o una frazione valida.'); return;}
+    if(parsed.num===0){this.message('Non puoi dividere per 0.'); return;}
+    if(parsed.num!==this.target.num||parsed.den!==this.target.den){
+      this.message(`Per isolare x devi dividere per ${fracToString(this.target)}.`);
+      return;
+    }
+    this.close();
+    performDivision(parsed);
+  }
+};
+function performDivision(divisor){
   flashMembers();
-  const inv={num:a.den,den:a.num};
-  for(const s of ['A','B']) state[s]=state[s].map(t=> t.type==='mono'?({...mulFrac(t,inv),x:t.x,type:'mono'}):t);
-  if(a.num<0) flipOperator();
-  simplifyOnly(); pushSnap('Divisione per coefficiente di x'); render();
+  const inv={num:divisor.den,den:divisor.num};
+  for(const s of ['A','B']){
+    state[s]=state[s].map(t=>{
+      if(t.type==='mono') return {...mulFrac(t,inv),x:t.x,type:'mono'};
+      if(t.type==='group'){
+        return {
+          ...t,
+          factor:mulFrac(t.factor,inv),
+          inner:t.inner.map(m=>({...mulFrac(m,inv),x:m.x,type:m.type||'mono',done:m.done}))
+        };
+      }
+      return t;
+    });
+  }
+  if(divisor.num<0) flipOperator();
+  simplifyOnly(); pushSnap('Divisione per coefficiente di x'); render(); hint('Divisione eseguita.');
 }
 function flipOperator(){const map={'<':'>','>':'<','≤':'≥','≥':'≤'}; state.op=map[state.op]||state.op; $('#opText').innerText=state.op;}
 function flashMembers(){['A','B'].forEach(id=>$('#'+id).classList.add('flashOp')); setTimeout(()=>['A','B'].forEach(id=>$('#'+id).classList.remove('flashOp')),900);}
@@ -367,13 +521,32 @@ function applySuggestionAnimated(){
     const node=$('#'+side).querySelector(`[data-index="${fromIdx}"]`), onto=$('#'+side).querySelector(`[data-index="${ontoIdx}"]`);
     if(!node||!onto) return; const ghost=createGhost(node); moveGhost(ghost, onto.getBoundingClientRect(), ()=>doSum(side,idx1,idx2)); return;
   }
-  if(s.type==='divideA'){ divideByCoeffA(); return; }
+  if(s.type==='divideA'){ divisionUI.open({guided:true}); return; }
   if(s.type==='finalCheck'){ if(isSolved()){drawSolution(); $('#solution').style.display='block';} return; }
 }
 $('#actApply').onclick=applySuggestionAnimated;
 $('#actTransport').onclick=()=>{if(computeSuggestion()?.type==='transport') applySuggestionAnimated();};
 $('#actSum').onclick=()=>{if(computeSuggestion()?.type==='sumTwo') applySuggestionAnimated();};
-$('#actDivideA').onclick=divideByCoeffA;
+$('#actDivideA').onclick=()=>divisionUI.open({guided:false});
+$('#divisionConfirm').onclick=()=>divisionUI.confirm();
+$('#divisionCancel').onclick=()=>divisionUI.close();
+$('#divisionOverlay').addEventListener('click',ev=>{if(ev.target===divisionUI.overlay) divisionUI.close();});
+$$('#divisionKeypad button').forEach(btn=>{
+  const key=btn.dataset.key, action=btn.dataset.action;
+  if(key){ btn.addEventListener('click',()=>divisionUI.inputKey(key)); return; }
+  if(action==='clear'){ btn.addEventListener('click',()=>divisionUI.clear()); return; }
+  if(action==='back'){ btn.addEventListener('click',()=>divisionUI.backspace()); return; }
+  if(action==='sign'){ btn.addEventListener('click',()=>divisionUI.toggleSign()); }
+});
+document.addEventListener('keydown',ev=>{
+  if(!divisionUI.isOpen()) return;
+  if(ev.key>='0'&&ev.key<='9'){divisionUI.inputKey(ev.key); ev.preventDefault(); return;}
+  if(ev.key==='/'){divisionUI.inputKey('/'); ev.preventDefault(); return;}
+  if(ev.key==='-'||ev.key==='+'){divisionUI.toggleSign(); ev.preventDefault(); return;}
+  if(ev.key==='Backspace'){divisionUI.backspace(); ev.preventDefault(); return;}
+  if(ev.key==='Escape'){divisionUI.close(); ev.preventDefault(); return;}
+  if(ev.key==='Enter'){divisionUI.confirm(); ev.preventDefault();}
+});
 
 /* ===== ghost ===== */
 function createGhost(node){
