@@ -241,7 +241,13 @@ function render(){
         const factorVal=showAbs?{...t.factor,num:-t.factor.num}:t.factor;
         const factor=document.createElement('div'); factor.className='factor monomio'; factor.innerText=monoText({num:factorVal.num,den:factorVal.den,x:false});
         factor.draggable=true;
-        factor.addEventListener('dragstart',ev=>{factor.classList.add('factorBusy'); ev.dataTransfer.setData('application/json', JSON.stringify({kind:'factor',side:id,gidx:i}));});
+        factor.addEventListener('dragstart',ev=>{
+          factor.classList.add('factorBusy');
+          const payload=JSON.stringify({kind:'factor',side:id,gidx:i});
+          ev.dataTransfer.effectAllowed='move';
+          ev.dataTransfer.setData('application/json', payload);
+          ev.dataTransfer.setData('text/plain', payload);
+        });
         factor.addEventListener('dragend',()=>factor.classList.remove('factorBusy'));
         const open=document.createElement('span'); open.className='par'; open.textContent='(';
         const inner=document.createElement('div'); inner.className='groupInner';
@@ -257,10 +263,14 @@ function render(){
           }
         });
         const close=document.createElement('span'); close.className='par'; close.textContent=')';
-        g.addEventListener('dragover',ev=>ev.preventDefault());
+        g.addEventListener('dragover',ev=>{ev.preventDefault(); ev.dataTransfer.dropEffect='move';});
         g.addEventListener('drop',ev=>{
           ev.preventDefault();
-          const data=ev.dataTransfer.getData('application/json'); if(!data) return;
+          let data=ev.dataTransfer.getData('application/json');
+          if(!data){
+            data=ev.dataTransfer.getData('text/plain');
+          }
+          if(!data) return;
           const d=JSON.parse(data); if(d.kind!=='factor'||d.side!==id||d.gidx!==i) return;
           const ghost=createGhost(factor);
           const targetTerm=g.querySelector('.innerTerm:not(.done)');
@@ -272,7 +282,12 @@ function render(){
         const n=document.createElement('div'); n.className='monomio'; n.dataset.side=id; n.dataset.index=String(i);
         const monoVal=showAbs?{...t,num:-t.num}:t;
         n.innerText=monoText(monoVal,false); n.draggable=true;
-        n.addEventListener('dragstart',ev=>{ev.dataTransfer.setData('application/json', JSON.stringify({kind:'mono',side:id,index:i}));});
+        n.addEventListener('dragstart',ev=>{
+          const payload=JSON.stringify({kind:'mono',side:id,index:i});
+          ev.dataTransfer.effectAllowed='move';
+          ev.dataTransfer.setData('application/json', payload);
+          ev.dataTransfer.setData('text/plain', payload);
+        });
         c.appendChild(n);
       }
     });
@@ -303,10 +318,14 @@ function applyFactorOnce(side,gidx){
 /* ===== DnD: somma & trasporto ===== */
 function attachDropZones(){
   ;[$('#A'),$('#B')].forEach(container=>{
-    container.ondragover=e=>e.preventDefault();
+    container.ondragover=e=>{e.preventDefault(); e.dataTransfer.dropEffect='move';};
     container.ondrop=e=>{
       e.preventDefault();
-      const data=e.dataTransfer.getData('application/json'); if(!data) return;
+      let data=e.dataTransfer.getData('application/json');
+      if(!data){
+        data=e.dataTransfer.getData('text/plain');
+      }
+      if(!data) return;
       const info=JSON.parse(data); if(info.kind==='factor'){hint('Trascina il fattore sui termini dentro la parentesi.'); return;}
       if(info.kind!=='mono') return;
       const from=info.side, to=container.id, index=info.index, term=state[from][index];
