@@ -326,7 +326,7 @@ function moveGhost(ghost,toRect,onDone){
 
 function intervalNotation(c,op){const v=(c.den===1?(''+c.num):(c.num+"/"+c.den));if(op==='>')return '('+v+', +∞)';if(op==='≥')return '['+v+', +∞)';if(op==='<')return '(-∞, '+v+')';if(op==='≤')return '(-∞, '+v+']';return ''}
 
-function createIneqApp(root,{onStateChange}={}){
+function createIneqApp(root,{onStateChange,initialState=null}={}){
   const $=sel=>root.querySelector(sel);
   const $$=sel=>root.querySelectorAll(sel);
   const board=root.querySelector('.board');
@@ -961,8 +961,43 @@ function createIneqApp(root,{onStateChange}={}){
   function grouped(){const factor=normFrac({num:(Math.random()<.5?-1:1)*(1+Math.floor(Math.random()*3)),den:1});const ax={num:rndNZ(),den:1,x:true,type:'mono',done:false};const b={num:rndNZ(),den:1,x:false,type:'mono',done:false};return{type:'group',factor,inner:[ax,b]};}
   function randomSide(){return (Math.random()<0.5)?[grouped()]:[mono(true),mono(false)];}
 
-  function initIneq(){
-    state={A:randomSide(),B:randomSide(),op:['<','>','≤','≥'][Math.floor(Math.random()*4)]};
+  function cloneSeed(seed){
+    const base=JSON.parse(JSON.stringify(seed||{}));
+    const normalizeTerm=t=>{
+      if(!t) return null;
+      if(t.type==='group'){
+        return {
+          type:'group',
+          factor:{...t.factor},
+          inner:(t.inner||[]).map(m=>({
+            type:'mono',
+            num:m.num,
+            den:m.den,
+            x:!!m.x,
+            done:!!m.done
+          }))
+        };
+      }
+      return {
+        type:'mono',
+        num:t.num,
+        den:t.den,
+        x:!!t.x
+      };
+    };
+    return {
+      A:(base.A||[]).map(normalizeTerm).filter(Boolean),
+      B:(base.B||[]).map(normalizeTerm).filter(Boolean),
+      op:base.op||'<'
+    };
+  }
+
+  function nextRandomState(){
+    return {A:randomSide(),B:randomSide(),op:['<','>','≤','≥'][Math.floor(Math.random()*4)]};
+  }
+
+  function initIneq(seed){
+    state=seed?cloneSeed(seed):nextRandomState();
     opText.innerText=state.op;
     simplifyOnly();
     stack=[];
@@ -976,10 +1011,10 @@ function createIneqApp(root,{onStateChange}={}){
   utility.redo.onclick=()=>{if(redo.length){const s=redo.pop();stack.push(s);state=deep(s.state);render();}};
   utility.newExercise.onclick=()=>{try{initIneq();}catch(e){console.error(e);setTimeout(initIneq,0);}};
 
-  try{initIneq();}catch(e){console.error(e);setTimeout(initIneq,0);}
+  try{initIneq(initialState);}catch(e){console.error(e);setTimeout(()=>initIneq(initialState),0);}
 
   return {
-    reset:initIneq,
+    reset:seed=>initIneq(seed),
     isSolved,
     solutionValue,
     getOperator:()=>state.op,
@@ -989,8 +1024,41 @@ function createIneqApp(root,{onStateChange}={}){
   };
 }
 
-const app1=createIneqApp(document.querySelector('[data-app="1"]'),{onStateChange:updateSystemGraph});
-const app2=createIneqApp(document.querySelector('[data-app="2"]'),{onStateChange:updateSystemGraph});
+const DEFAULT_SYSTEM=[
+  {
+    A:[{
+      type:'group',
+      factor:{num:2,den:1},
+      inner:[
+        {type:'mono',num:1,den:1,x:true,done:false},
+        {type:'mono',num:-3,den:1,x:false,done:false}
+      ]
+    }],
+    B:[
+      {type:'mono',num:5,den:1,x:true},
+      {type:'mono',num:-7,den:1,x:false}
+    ],
+    op:'≥'
+  },
+  {
+    A:[{
+      type:'group',
+      factor:{num:-3,den:1},
+      inner:[
+        {type:'mono',num:1,den:1,x:true,done:false},
+        {type:'mono',num:2,den:1,x:false,done:false}
+      ]
+    }],
+    B:[
+      {type:'mono',num:2,den:1,x:true},
+      {type:'mono',num:5,den:1,x:false}
+    ],
+    op:'<'
+  }
+];
+
+const app1=createIneqApp(document.querySelector('[data-app="1"]'),{onStateChange:updateSystemGraph,initialState:DEFAULT_SYSTEM[0]});
+const app2=createIneqApp(document.querySelector('[data-app="2"]'),{onStateChange:updateSystemGraph,initialState:DEFAULT_SYSTEM[1]});
 
 const classicView=document.getElementById('classicView');
 const interactiveArea=document.getElementById('interactiveArea');
