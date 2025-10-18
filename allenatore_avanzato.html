@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allenatore Avanzato di Equazioni e Disequazioni</title>
+  <style>
+    :root {
+      --bg: #f5f8ff;
+      --panel: #ffffff;
+      --accent: #1a73e8;
+      --accent-strong: rgba(26, 115, 232, 0.55);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --shadow: 0 18px 45px rgba(15, 39, 69, 0.12);
+      font-size: clamp(16px, 1vw + 15px, 22px);
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", Roboto, system-ui, sans-serif;
+      background: var(--bg);
+      color: #0f172a;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 1.25rem clamp(1rem, 4vw, 3.5rem);
+      background: linear-gradient(135deg, #1a73e8, #1976d2);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.65rem;
+      letter-spacing: 0.02em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(255, 255, 255, 0.18);
+      padding: 0.45rem 0.85rem;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+    }
+    .mode-switcher {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: rgba(255, 255, 255, 0.14);
+      padding: 0.55rem 1rem;
+      border-radius: 999px;
+    }
+    .mode-switcher label {
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .mode-switcher select {
+      border: none;
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+      font-size: 1rem;
+      color: #0f172a;
+      background: rgba(255, 255, 255, 0.9);
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px rgba(15, 39, 69, 0.12);
+    }
+    .mode-switcher select:focus-visible {
+      outline: 3px solid rgba(255, 255, 255, 0.7);
+      outline-offset: 2px;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(1rem, 3vw, 2.25rem);
+      padding: clamp(1rem, 4vw, 3rem);
+      justify-content: center;
+    }
+    .panel {
+      background: var(--panel);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: clamp(1rem, 2vw, 1.8rem);
+    }
+    .board {
+      flex: 2 1 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .board::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(140deg, rgba(26, 115, 232, 0.08), rgba(34, 197, 94, 0.08));
+      opacity: 0.65;
+      mix-blend-mode: screen;
+    }
+    .board > * {
+      position: relative;
+      z-index: 1;
+    }
+    .equation-display {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.1rem;
+      justify-content: center;
+      align-items: center;
+      font-size: clamp(1.75rem, 4vw, 2.6rem);
+      color: #0b2a55;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .member {
+      min-height: 3.4rem;
+      padding: 0.75rem 1.1rem;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: inset 0 0 0 2px rgba(26, 115, 232, 0.12);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      flex-wrap: wrap;
+    }
+    .term, .factor {
+      padding: 0.45rem 0.8rem;
+      border-radius: 12px;
+      border: 2px solid var(--accent);
+      background: rgba(26, 115, 232, 0.1);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .factor {
+      border-style: dashed;
+      background: rgba(26, 115, 232, 0.16);
+    }
+    .product-log {
+      text-align: center;
+      font-size: clamp(1rem, 1vw + 0.8rem, 1.15rem);
+      color: #1b3a57;
+      background: rgba(26, 115, 232, 0.12);
+      padding: 0.7rem 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(26, 115, 232, 0.18);
+    }
+    .hint-panel {
+      background: rgba(34, 197, 94, 0.12);
+      padding: 1rem 1.2rem;
+      border-radius: 16px;
+      color: #0f2d40;
+      line-height: 1.5;
+      display: grid;
+      gap: 0.45rem;
+    }
+    .hint-panel strong {
+      font-size: 1.05rem;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+    .controls button {
+      border: none;
+      border-radius: 16px;
+      padding: 0.65rem 1.2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #fff;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .controls button.primary { background: var(--accent); box-shadow: 0 12px 25px rgba(26, 115, 232, 0.35); }
+    .controls button.success { background: var(--success); box-shadow: 0 12px 25px rgba(34, 197, 94, 0.35); }
+    .controls button.warning { background: var(--warning); box-shadow: 0 12px 25px rgba(245, 158, 11, 0.35); }
+    .controls button.secondary {
+      background: #475569;
+      box-shadow: 0 12px 25px rgba(71, 85, 105, 0.35);
+    }
+    .controls button:disabled {
+      background: #94a3b8;
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .controls button:not(:disabled):hover {
+      transform: translateY(-2px);
+    }
+    .history {
+      flex: 1 1 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    .history h2 {
+      margin: 0;
+      font-size: 1.2rem;
+      color: #0f2d40;
+    }
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: clamp(240px, 55vh, 420px);
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      padding-right: 0.5rem;
+    }
+    .history-entry {
+      border-left: 5px solid rgba(26, 115, 232, 0.55);
+      background: rgba(26, 115, 232, 0.08);
+      border-radius: 12px;
+      padding: 0.6rem 0.8rem;
+      cursor: pointer;
+      transition: transform 0.18s ease, border 0.18s ease, background 0.18s ease;
+    }
+    .history-entry:hover,
+    .history-entry:focus-visible {
+      transform: translateX(4px);
+      border-left-color: var(--accent);
+    }
+    .history-entry.current {
+      background: rgba(34, 197, 94, 0.12);
+      border-left-color: var(--success);
+      box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.35);
+    }
+    .history-entry .step {
+      font-weight: 600;
+      color: #0b2a55;
+    }
+    .history-entry .guide {
+      font-size: 0.95rem;
+      color: #1b3a57;
+      margin-top: 0.35rem;
+    }
+    .solution-box {
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .solution-box.active {
+      display: flex;
+    }
+    #numberline {
+      width: 100%;
+      max-width: 520px;
+      height: 130px;
+    }
+    #message {
+      min-height: 1.2rem;
+      text-align: center;
+      font-weight: 600;
+      color: #0f2d40;
+    }
+    .coach-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0b2a55;
+    }
+    @media (max-width: 768px) {
+      header {
+        justify-content: center;
+        text-align: center;
+      }
+      .board::after {
+        display: none;
+      }
+      .history {
+        flex: 1 1 100%;
+      }
+      .history-list {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Allenatore Avanzato</h1>
+      <div class="badge" aria-live="polite">Versione 2.0 · Tutor intelligente</div>
+    </div>
+    <div class="mode-switcher">
+      <label for="mode">Modalità</label>
+      <select id="mode">
+        <option value="equation">Equazioni lineari</option>
+        <option value="inequality">Disequazioni lineari</option>
+      </select>
+    </div>
+  </header>
+  <main>
+    <section class="board panel" aria-labelledby="exercise-title">
+      <div id="halo" aria-hidden="true"></div>
+      <h2 id="exercise-title" style="margin:0;font-size:1.2rem;color:#12325b"></h2>
+      <div class="equation-display" aria-live="polite">
+        <div id="memberA" class="member"></div>
+        <span id="operator" aria-hidden="true" style="min-width:2.5rem;text-align:center">=</span>
+        <div id="memberB" class="member"></div>
+      </div>
+      <div class="product-log" id="productLog"></div>
+      <div class="hint-panel" aria-live="polite">
+        <span class="coach-title">Suggerimento del coach</span>
+        <p id="bigHint" style="margin:0"></p>
+        <p id="microHint" style="margin:0;color:#1f3d5a"></p>
+      </div>
+      <div class="controls">
+        <button id="prevStep" class="secondary" type="button">Passo precedente</button>
+        <button id="nextStep" class="primary" type="button">Applica passo guidato</button>
+        <button id="showSolution" class="success" type="button">Mostra soluzione</button>
+        <button id="newExercise" class="warning" type="button">Nuovo esercizio</button>
+      </div>
+      <div id="message" aria-live="assertive"></div>
+      <div id="solutionBox" class="solution-box" aria-live="polite">
+        <svg id="numberline" viewBox="0 0 800 130" preserveAspectRatio="xMidYMid meet"></svg>
+        <div id="solutionText"></div>
+      </div>
+    </section>
+    <aside class="history panel">
+      <div>
+        <h2>Storico dei passaggi</h2>
+        <p style="margin:0;color:#475569;font-size:0.95rem">Clicca un passaggio per rivederlo.</p>
+      </div>
+      <div id="historyList" class="history-list" role="list"></div>
+    </aside>
+  </main>
+  <template id="historyEntryTemplate">
+    <button class="history-entry" role="listitem"></button>
+  </template>
+  <script>
+    const exercises = {
+      equation: [
+        {
+          title: "Equazione con termini frazionari",
+          operator: "=",
+          left: ["3x", "-", "\u00bd"],
+          right: ["\u00be"],
+          steps: [
+            {
+              summary: "Elimina la frazione moltiplicando entrambi i membri per 2",
+              detail: "Moltiplica ogni termine per 2 per ottenere solo interi.",
+              coach: "Moltiplica tutto per il minimo comune multiplo delle frazioni.",
+              micro: "2 · 3x = 6x e 2 · ( -1/2 ) = -1",
+              transform: { left: ["6x", "-", "1"], right: ["\u00be", "\times", "2"] }
+            },
+            {
+              summary: "Semplifica il membro di destra",
+              detail: "Calcola 3/4 · 2 per ottenere 3/2.",
+              coach: "Consolida il risultato dopo la moltiplicazione.",
+              micro: "3/4 · 2 = 3/2",
+              transform: { left: ["6x", "-", "1"], right: ["3/2"] }
+            },
+            {
+              summary: "Trasporta -1 al secondo membro",
+              detail: "Somma 1 a entrambi i membri.",
+              coach: "Isola il termine con x portando le costanti dall'altra parte.",
+              micro: "6x = 3/2 + 1",
+              transform: { left: ["6x"], right: ["3/2", "+", "1"] }
+            },
+            {
+              summary: "Somma le frazioni",
+              detail: "Porta tutto a denominatore 2.",
+              coach: "Somma con attenzione: 3/2 + 1 = 5/2.",
+              micro: "6x = 5/2",
+              transform: { left: ["6x"], right: ["5/2"] }
+            },
+            {
+              summary: "Dividi per il coefficiente di x",
+              detail: "Dividi entrambi i membri per 6.",
+              coach: "L'ultimo passaggio è isolare x dividendo per il coefficiente.",
+              micro: "x = 5/12",
+              transform: { left: ["x"], right: ["5/12"] }
+            }
+          ],
+          solution: {
+            type: "point",
+            value: 5 / 12,
+            text: "x = 5/12"
+          }
+        },
+        {
+          title: "Equazione con parentesi",
+          operator: "=",
+          left: ["2", "(", "x", "+", "3", ")"],
+          right: ["4x", "-", "2"],
+          steps: [
+            {
+              summary: "Sviluppa la parentesi",
+              detail: "Moltiplica 2 per ogni termine all'interno della parentesi.",
+              coach: "Applica la proprietà distributiva.",
+              micro: "2x + 6 = 4x - 2",
+              transform: { left: ["2x", "+", "6"], right: ["4x", "-", "2"] }
+            },
+            {
+              summary: "Trasporta il termine con x",
+              detail: "Sottrai 2x da entrambi i membri.",
+              coach: "Concentra tutti i termini con x da un lato.",
+              micro: "6 = 2x - 2",
+              transform: { left: ["6"], right: ["2x", "-", "2"] }
+            },
+            {
+              summary: "Isola il termine costante",
+              detail: "Somma 2 ad entrambi i membri.",
+              coach: "Porta le costanti dall'altro lato.",
+              micro: "8 = 2x",
+              transform: { left: ["8"], right: ["2x"] }
+            },
+            {
+              summary: "Dividi per 2",
+              detail: "Divide entrambi i membri per il coefficiente di x.",
+              coach: "x = 4",
+              micro: "x = 4",
+              transform: { left: ["x"], right: ["4"] }
+            }
+          ],
+          solution: {
+            type: "point",
+            value: 4,
+            text: "x = 4"
+          }
+        }
+      ],
+      inequality: [
+        {
+          title: "Disequazione con fattore comune",
+          operator: "\u2265",
+          left: ["3", "(", "x", "-", "1", ")"],
+          right: ["x", "+", "5"],
+          steps: [
+            {
+              summary: "Sviluppa la parentesi",
+              detail: "Moltiplica 3 per i termini interni.",
+              coach: "Distribuisci per eliminare la parentesi.",
+              micro: "3x - 3 \u2265 x + 5",
+              transform: { left: ["3x", "-", "3"], right: ["x", "+", "5"] }
+            },
+            {
+              summary: "Porta le x a sinistra",
+              detail: "Sottrai x da entrambi i membri.",
+              coach: "Concentra tutte le x sullo stesso lato.",
+              micro: "2x - 3 \u2265 5",
+              transform: { left: ["2x", "-", "3"], right: ["5"] }
+            },
+            {
+              summary: "Isola la costante",
+              detail: "Somma 3 a entrambi i membri.",
+              coach: "Porta le costanti a destra.",
+              micro: "2x \u2265 8",
+              transform: { left: ["2x"], right: ["8"] }
+            },
+            {
+              summary: "Dividi per il coefficiente di x",
+              detail: "Dividi entrambi i membri per 2 (positivo, quindi il verso resta).",
+              coach: "x \u2265 4",
+              micro: "x \u2265 4",
+              transform: { left: ["x"], right: ["4"] }
+            }
+          ],
+          solution: {
+            type: "interval",
+            intervals: [
+              { from: 4, to: Infinity, openStart: false, openEnd: true }
+            ],
+            text: "x \u2265 4"
+          }
+        },
+        {
+          title: "Disequazione con cambio di verso",
+          operator: "<",
+          left: ["-2", "x", "+", "3"],
+          right: ["11"],
+          steps: [
+            {
+              summary: "Trasporta la costante",
+              detail: "Sottrai 3 da entrambi i membri.",
+              coach: "Isola il termine con x spostando le costanti.",
+              micro: "-2x < 8",
+              transform: { left: ["-2x"], right: ["8"] }
+            },
+            {
+              summary: "Dividi per un numero negativo",
+              detail: "Dividi entrambi i membri per -2 e ricorda di invertire il verso.",
+              coach: "Quando dividi per un numero negativo il verso cambia!",
+              micro: "x > -4",
+              transform: { left: ["x"], right: ["-4"], operator: ">" }
+            }
+          ],
+          solution: {
+            type: "interval",
+            intervals: [
+              { from: -4, to: Infinity, openStart: true, openEnd: true }
+            ],
+            text: "x > -4"
+          }
+        }
+      ]
+    };
+
+    const modeSelect = document.getElementById("mode");
+    const titleEl = document.getElementById("exercise-title");
+    const memberA = document.getElementById("memberA");
+    const memberB = document.getElementById("memberB");
+    const operatorEl = document.getElementById("operator");
+    const productLog = document.getElementById("productLog");
+    const bigHint = document.getElementById("bigHint");
+    const microHint = document.getElementById("microHint");
+    const historyList = document.getElementById("historyList");
+    const historyTemplate = document.getElementById("historyEntryTemplate");
+    const prevBtn = document.getElementById("prevStep");
+    const nextBtn = document.getElementById("nextStep");
+    const newBtn = document.getElementById("newExercise");
+    const solutionBtn = document.getElementById("showSolution");
+    const solutionBox = document.getElementById("solutionBox");
+    const numberline = document.getElementById("numberline");
+    const solutionText = document.getElementById("solutionText");
+    const message = document.getElementById("message");
+
+    let currentMode = modeSelect.value;
+    let currentExerciseIndex = 0;
+    let currentStepIndex = -1;
+    let showSolution = false;
+
+    function chooseExercise(mode, keepIndex = false) {
+      const pool = exercises[mode];
+      if (!keepIndex) {
+        let nextIndex;
+        do {
+          nextIndex = Math.floor(Math.random() * pool.length);
+        } while (pool.length > 1 && nextIndex === currentExerciseIndex);
+        currentExerciseIndex = nextIndex;
+      }
+      currentMode = mode;
+      currentStepIndex = -1;
+      showSolution = false;
+      solutionBox.classList.remove("active");
+      solutionBtn.textContent = "Mostra soluzione";
+      renderExercise();
+      message.textContent = "Nuovo esercizio pronto!";
+      setTimeout(() => (message.textContent = ""), 2800);
+    }
+
+    function renderMember(element, parts) {
+      element.innerHTML = "";
+      parts.forEach((part) => {
+        const span = document.createElement("span");
+        span.textContent = part;
+        span.className = /[a-zA-Z0-9]/.test(part) ? "term" : "factor";
+        element.appendChild(span);
+      });
+    }
+
+    function renderHistory(exercise) {
+      historyList.innerHTML = "";
+      exercise.steps.forEach((step, index) => {
+        const node = historyTemplate.content.firstElementChild.cloneNode(true);
+        const title = document.createElement("div");
+        title.className = "step";
+        title.textContent = `Passo ${index + 1}`;
+        const detail = document.createElement("div");
+        detail.className = "guide";
+        detail.textContent = step.summary;
+        node.appendChild(title);
+        node.appendChild(detail);
+        node.addEventListener("click", () => {
+          currentStepIndex = index;
+          renderStep();
+        });
+        historyList.appendChild(node);
+      });
+    }
+
+    function renderExercise() {
+      const exercise = exercises[currentMode][currentExerciseIndex];
+      titleEl.textContent = exercise.title;
+      operatorEl.textContent = exercise.operator;
+      renderMember(memberA, exercise.left);
+      renderMember(memberB, exercise.right);
+      productLog.textContent = "Segui i passaggi guidati per trasformare l'espressione.";
+      bigHint.textContent = exercise.steps[0]?.coach || "";
+      microHint.textContent = exercise.steps[0]?.detail || "";
+      renderHistory(exercise);
+      highlightHistory();
+    }
+
+    function applyTransform(target, transformParts) {
+      target.innerHTML = "";
+      transformParts.forEach((part) => {
+        const span = document.createElement("span");
+        span.textContent = part;
+        span.className = /[a-zA-Z0-9]/.test(part) ? "term" : "factor";
+        target.appendChild(span);
+      });
+    }
+
+    function renderStep() {
+      const exercise = exercises[currentMode][currentExerciseIndex];
+      const step = exercise.steps[currentStepIndex];
+      if (!step) {
+        renderExercise();
+        currentStepIndex = -1;
+        highlightHistory();
+        updateButtons();
+        return;
+      }
+      operatorEl.textContent = step.transform.operator || exercise.operator;
+      applyTransform(memberA, step.transform.left);
+      applyTransform(memberB, step.transform.right);
+      productLog.textContent = step.detail;
+      bigHint.textContent = step.coach;
+      microHint.textContent = step.micro;
+      highlightHistory();
+      updateButtons();
+      animateHalo();
+    }
+
+    function highlightHistory() {
+      const entries = historyList.querySelectorAll(".history-entry");
+      entries.forEach((entry, index) => {
+        entry.classList.toggle("current", index === currentStepIndex);
+      });
+    }
+
+    function updateButtons() {
+      const exercise = exercises[currentMode][currentExerciseIndex];
+      prevBtn.disabled = currentStepIndex <= -1;
+      nextBtn.disabled = currentStepIndex >= exercise.steps.length - 1;
+      if (currentStepIndex >= exercise.steps.length - 1) {
+        message.textContent = "Complimenti! Hai completato la procedura.";
+      } else {
+        message.textContent = "";
+      }
+    }
+
+    function drawNumberLine(solution) {
+      numberline.innerHTML = "";
+      const axis = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      axis.setAttribute("x1", "40");
+      axis.setAttribute("x2", "760");
+      axis.setAttribute("y1", "70");
+      axis.setAttribute("y2", "70");
+      axis.setAttribute("stroke", "#0f172a");
+      axis.setAttribute("stroke-width", "4");
+      numberline.appendChild(axis);
+
+      if (solution.type === "point") {
+        const value = solution.value;
+        const position = 40 + (value + 10) * 30;
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", position);
+        circle.setAttribute("cy", "70");
+        circle.setAttribute("r", "10");
+        circle.setAttribute("fill", "#1a73e8");
+        numberline.appendChild(circle);
+      } else if (solution.type === "interval") {
+        solution.intervals.forEach((interval) => {
+          const start = interval.from;
+          const end = interval.to;
+          const x1 = isFinite(start) ? 40 + (start + 10) * 30 : 40;
+          const x2 = isFinite(end) ? 40 + (end + 10) * 30 : 760;
+          const segment = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          segment.setAttribute("x1", x1);
+          segment.setAttribute("x2", x2);
+          segment.setAttribute("y1", "70");
+          segment.setAttribute("y2", "70");
+          segment.setAttribute("stroke", "#22c55e");
+          segment.setAttribute("stroke-width", "8");
+          numberline.appendChild(segment);
+
+          const startCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          startCircle.setAttribute("cx", x1);
+          startCircle.setAttribute("cy", "70");
+          startCircle.setAttribute("r", "10");
+          startCircle.setAttribute("fill", interval.openStart ? "#fff" : "#22c55e");
+          startCircle.setAttribute("stroke", "#22c55e");
+          startCircle.setAttribute("stroke-width", "3");
+          numberline.appendChild(startCircle);
+
+          if (isFinite(end)) {
+            const endCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            endCircle.setAttribute("cx", x2);
+            endCircle.setAttribute("cy", "70");
+            endCircle.setAttribute("r", "10");
+            endCircle.setAttribute("fill", interval.openEnd ? "#fff" : "#22c55e");
+            endCircle.setAttribute("stroke", "#22c55e");
+            endCircle.setAttribute("stroke-width", "3");
+            numberline.appendChild(endCircle);
+          } else {
+            const arrow = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            arrow.setAttribute("points", "760,70 742,62 742,78");
+            arrow.setAttribute("fill", "#22c55e");
+            numberline.appendChild(arrow);
+          }
+        });
+      }
+    }
+
+    function animateHalo() {
+      const halo = document.getElementById("halo");
+      halo.style.position = "absolute";
+      halo.style.inset = "1rem";
+      halo.style.borderRadius = "18px";
+      halo.style.border = "3px solid var(--accent-strong)";
+      halo.style.opacity = "1";
+      halo.style.transition = "opacity 1.2s ease";
+      requestAnimationFrame(() => {
+        halo.style.opacity = "0";
+      });
+    }
+
+    prevBtn.addEventListener("click", () => {
+      if (currentStepIndex <= -1) return;
+      currentStepIndex -= 1;
+      if (currentStepIndex === -1) {
+        renderExercise();
+      } else {
+        renderStep();
+      }
+      updateButtons();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      const exercise = exercises[currentMode][currentExerciseIndex];
+      if (currentStepIndex >= exercise.steps.length - 1) return;
+      currentStepIndex += 1;
+      renderStep();
+    });
+
+    newBtn.addEventListener("click", () => chooseExercise(currentMode));
+
+    solutionBtn.addEventListener("click", () => {
+      showSolution = !showSolution;
+      if (showSolution) {
+        const solution = exercises[currentMode][currentExerciseIndex].solution;
+        drawNumberLine(solution);
+        solutionText.textContent = solution.text;
+        solutionBox.classList.add("active");
+        solutionBtn.textContent = "Nascondi soluzione";
+      } else {
+        solutionBox.classList.remove("active");
+        solutionBtn.textContent = "Mostra soluzione";
+      }
+    });
+
+    modeSelect.addEventListener("change", (event) => {
+      chooseExercise(event.target.value);
+    });
+
+    chooseExercise(currentMode, true);
+  </script>
+</body>
+</html>
