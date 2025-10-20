@@ -17,11 +17,15 @@ main{display:flex;flex-direction:column;gap:1.5rem;align-items:center;padding:1r
 .systemHeader .smallBtn:hover{background:#475569}
 
 .systemWrapper{display:flex;gap:1rem;align-items:stretch;justify-content:center;width:100%;max-width:1200px}
-.systemBrace{font-size:5rem;line-height:1;color:var(--primary);display:flex;align-items:center;padding-left:.4rem}
+.systemBraceColumn{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:110px;padding:1.2rem .9rem}
+.systemBraceColumn svg{flex:1 1 auto;width:76px;height:100%;min-height:360px;max-height:none;opacity:.28;filter:drop-shadow(0 12px 26px rgba(15,23,42,.18))}
+.systemBraceColumn path{fill:none;stroke:var(--primary);stroke-width:8;stroke-linecap:round}
+.braceLabels{position:absolute;inset:50% auto auto 50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1.4rem;text-transform:uppercase;letter-spacing:.08em;font-size:.8rem;color:var(--primary);opacity:.55;pointer-events:none}
+.braceLabels span{writing-mode:vertical-rl;text-orientation:mixed}
 .system-grid{display:flex;flex-wrap:wrap;gap:1.2rem;justify-content:center;width:100%;max-width:1200px}
-.app{display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;min-width:min(92vw,360px);max-width:1100px}
+.app{display:flex;flex-wrap:wrap;gap:1.2rem;justify-content:center;align-items:stretch;min-width:min(92vw,360px);max-width:1100px}
 .app .board{display:flex;flex-direction:column;gap:1rem;align-items:center;flex:1 1 360px}
-.app .historyPanel{min-width:280px;max-width:540px}
+.app .historyPanel{display:flex;flex-direction:column;gap:1rem;flex:0 1 360px;min-width:300px;max-width:520px}
 .app .history{max-height:70vh;overflow:auto;font-size:1.02rem;line-height:1.35}
 .step{border-left:5px solid #0ea5e9;padding:.55rem .7rem;margin:.6rem 0;background:#fff;border-radius:12px}
 .step.current{border-color:#22c55e;background:#f0fff6}
@@ -47,20 +51,23 @@ main{display:flex;flex-direction:column;gap:1.5rem;align-items:center;padding:1r
 .flashOp{animation:borderFlash .9s ease-in-out 2}
 @keyframes borderFlash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}100%{box-shadow:0 0 0 16px rgba(34,197,94,0)}}
 
-.coach{display:flex;flex-direction:column;gap:.6rem;align-items:center;text-align:center}
-.bigHint{font-size:1.3rem;line-height:1.35;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:.7rem 1rem;max-width:980px}
-.actionRow{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:center}
+.coach{display:flex;flex-direction:column;gap:.8rem;align-items:stretch;text-align:left}
+.bigHint{font-size:1.15rem;line-height:1.4;background:#fff;border:2px solid #e2e8f0;border-radius:14px;padding:.75rem 1rem;width:100%;text-align:left}
+.actionRow{display:flex;gap:.6rem;flex-wrap:wrap;justify-content:flex-end;width:100%}
 .bigAction{display:none;border:none;border-radius:16px;padding:.9rem 1.2rem;background:var(--accent);color:#fff;font-size:1.05rem;cursor:pointer}
 .bigAction:hover{background:var(--accentDark)}
 .pulseGlow{animation:pulse 1.2s ease-in-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,179,0,.65)}70%{box-shadow:0 0 0 22px rgba(255,179,0,0)}100%{box-shadow:0 0 0 0 rgba(255,179,0,0)}}
 
-.utility{display:flex;gap:.5rem;align-items:center;justify-content:center}
+.utility{display:flex;gap:.5rem;align-items:center;justify-content:flex-end;width:100%}
 .smallBtn{border:none;border-radius:12px;padding:.45rem .65rem;background:#64748b;color:#fff;cursor:pointer}
 .smallBtn:hover{background:#475569}
 .msg{min-height:1.2rem;color:#0f172a;text-align:center}
 
-.solution{display:none;margin-top:.8rem;width:100%;max-width:1000px}
+.solution{display:none;margin-top:.8rem;width:100%;max-width:1000px;align-self:stretch}
+.historyPanel .history{flex:1}
+.historyPanel .historyBlock{display:flex;flex-direction:column;gap:.6rem;flex:1}
+.historyPanel .historyBlock h3{font-size:1.1rem;margin:0}
 .intervalText{margin-top:.35rem;text-align:center;font-size:1.1rem}
 svg{width:100%;height:120px}
 .axis{stroke:#0f172a;stroke-width:2}
@@ -107,7 +114,12 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
 @media (max-width:640px){
   .ineq{font-size:2rem}
   .monomio,.group .factor{font-size:1.6rem}
-  .systemBrace{font-size:3.5rem;padding-left:0}
+  .app .historyPanel{flex:1 1 100%}
+  .coach{align-items:center;text-align:center}
+  .bigHint{text-align:center}
+  .actionRow{justify-content:center}
+  .utility{justify-content:center}
+  .systemBraceColumn{display:none}
 }
 </style>
 </head>
@@ -119,7 +131,15 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
   </div>
 
   <div class="systemWrapper">
-    <div class="systemBrace" aria-hidden="true">{</div>
+    <aside class="systemBraceColumn" aria-hidden="true">
+      <svg viewBox="0 0 80 800" preserveAspectRatio="none" focusable="false">
+        <path d="M66 20 Q28 70 32 190 L32 340 Q32 400 16 420 Q32 440 32 500 L32 650 Q28 770 66 780" />
+      </svg>
+      <div class="braceLabels">
+        <span>Disequazione 1</span>
+        <span>Disequazione 2</span>
+      </div>
+    </aside>
     <div class="system-grid">
       <div class="app" data-app="1">
         <section class="card board" aria-label="Disequazione 1">
@@ -129,6 +149,9 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
             <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
             <div class="membro" data-side="B"></div>
           </div>
+          <div class="msg" aria-live="polite"></div>
+        </section>
+        <section class="card historyPanel" aria-label="Guida e passaggi disequazione 1">
           <div class="coach">
             <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
             <div class="actionRow">
@@ -137,21 +160,20 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
               <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
               <button class="bigAction actApply">Applica mossa suggerita</button>
             </div>
+            <div class="utility">
+              <button class="smallBtn undo">↶ Undo</button>
+              <button class="smallBtn redo">↷ Redo</button>
+              <button class="smallBtn newExercise">Nuova disequazione</button>
+            </div>
             <div class="solution">
               <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
               <div class="intervalText"></div>
             </div>
           </div>
-          <div class="utility">
-            <button class="smallBtn undo">↶ Undo</button>
-            <button class="smallBtn redo">↷ Redo</button>
-            <button class="smallBtn newExercise">Nuova disequazione</button>
+          <div class="historyBlock">
+            <h3>Passaggi</h3>
+            <div class="history"></div>
           </div>
-          <div class="msg" aria-live="polite"></div>
-        </section>
-        <section class="card historyPanel" aria-label="Passaggi disequazione 1">
-          <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
-          <div class="history"></div>
         </section>
         <div class="divisionOverlay" aria-hidden="true">
           <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
@@ -194,6 +216,9 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
             <span class="opText" style="min-width:2.5rem;text-align:center">?</span>
             <div class="membro" data-side="B"></div>
           </div>
+          <div class="msg" aria-live="polite"></div>
+        </section>
+        <section class="card historyPanel" aria-label="Guida e passaggi disequazione 2">
           <div class="coach">
             <div class="bigHint">Trascina il fattore sopra ogni termine tra parentesi.</div>
             <div class="actionRow">
@@ -202,21 +227,20 @@ table.systemLegend span.swatch{width:1.3rem;height:.5rem;border-radius:.25rem;di
               <button class="bigAction actDivideA">Dividi per il coefficiente di x</button>
               <button class="bigAction actApply">Applica mossa suggerita</button>
             </div>
+            <div class="utility">
+              <button class="smallBtn undo">↶ Undo</button>
+              <button class="smallBtn redo">↷ Redo</button>
+              <button class="smallBtn newExercise">Nuova disequazione</button>
+            </div>
             <div class="solution">
               <svg class="numberline" viewBox="0 0 800 120" preserveAspectRatio="xMidYMid meet"></svg>
               <div class="intervalText"></div>
             </div>
           </div>
-          <div class="utility">
-            <button class="smallBtn undo">↶ Undo</button>
-            <button class="smallBtn redo">↷ Redo</button>
-            <button class="smallBtn newExercise">Nuova disequazione</button>
+          <div class="historyBlock">
+            <h3>Passaggi</h3>
+            <div class="history"></div>
           </div>
-          <div class="msg" aria-live="polite"></div>
-        </section>
-        <section class="card historyPanel" aria-label="Passaggi disequazione 2">
-          <h3 style="text-align:center;margin-bottom:.6rem">Passaggi</h3>
-          <div class="history"></div>
         </section>
         <div class="divisionOverlay" aria-hidden="true">
           <div class="divisionPanel" role="dialog" aria-modal="true" tabindex="-1">
@@ -301,7 +325,7 @@ function createIneqApp(root,{onStateChange}={}){
   const board=root.querySelector('.board');
   const members={A:board.querySelector('.membro[data-side="A"]'),B:board.querySelector('.membro[data-side="B"]')};
   const opText=board.querySelector('.opText');
-  const coach=board.querySelector('.coach');
+  const coach=root.querySelector('.coach');
   const bigHint=coach.querySelector('.bigHint');
   const actionButtons={
     transport:coach.querySelector('.actTransport'),
@@ -314,9 +338,9 @@ function createIneqApp(root,{onStateChange}={}){
   const intervalText=coach.querySelector('.intervalText');
   const msg=board.querySelector('.msg');
   const utility={
-    undo:board.querySelector('.undo'),
-    redo:board.querySelector('.redo'),
-    newExercise:board.querySelector('.newExercise')
+    undo:coach.querySelector('.undo'),
+    redo:coach.querySelector('.redo'),
+    newExercise:coach.querySelector('.newExercise')
   };
   const historyBox=root.querySelector('.history');
   const overlay=root.querySelector('.divisionOverlay');
