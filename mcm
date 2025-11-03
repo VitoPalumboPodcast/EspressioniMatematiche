@@ -1,0 +1,829 @@
+<!DOCTYPE html> <html lang="it"> <head> <meta charset="UTF-8"> <title>Suddivisione del Percorso del Ciclista</title> <!-- Inclusione di Chart.js --> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Inclusione di Font Awesome --> <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" /> <style> /* CSS */ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; max-width: 1200px; margin-left: auto; margin-right: auto; background-color: #f0f2f5; color: #333; }    
+h1, h2, h3 {
+        text-align: center;
+        color: #2c3e50;
+    }
+
+    .tappa {
+        margin: 20px 0;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+    }
+
+    table {
+        width: 100%;
+        text-align: center;
+        margin-top: 20px;
+        border-collapse: collapse;
+        background-color: #fff;
+    }
+
+    th, td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #2980b9;
+        color: #fff;
+    }
+
+    input[type="number"] {
+        padding: 5px;
+        font-size: 1em;
+        width: 50px;
+        text-align: center;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    select {
+        padding: 5px;
+        font-size: 1em;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+
+    button {
+        padding: 6px 10px;
+        font-size: 1em;
+        background-color: #2980b9;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    button i {
+        pointer-events: none;
+    }
+
+    button:hover {
+        background-color: #1f6391;
+    }
+
+    .fraction-buttons button {
+        margin: 0 2px;
+    }
+
+    #error-message {
+        color: red;
+        font-size: 1em;
+        text-align: center;
+    }
+
+    #feedback {
+        text-align: center;
+        font-size: 1.2em;
+        margin-top: 20px;
+        color: green;
+    }
+
+    #chart-container, #mcm-charts-container, #global-chart-container, #global-chart-independent-container {
+        width: 100%;
+        margin: 20px auto;
+        position: relative;
+    }
+
+    .chart-wrapper {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: nowrap;
+    }
+
+    .chart-item {
+        width: 30%;
+        min-width: 250px;
+        position: relative;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .chart-item canvas {
+        width: 200px;
+        height: 200px;
+        margin: auto;
+    }
+
+    #reset-button, #calcola-button {
+        display: inline-block;
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 1em;
+        background-color: #27ae60;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    #reset-button:hover, #calcola-button:hover {
+        background-color: #1e8449;
+    }
+
+    /* Tooltip styling */
+    .tooltip {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        color: #0066cc;
+    }
+
+    .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 250px;
+        background-color: #f9f9f9;
+        color: #333;
+        text-align: left;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%; /* Position above the text */
+        left: 50%;
+        margin-left: -125px;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+
+    .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .chart-wrapper {
+            flex-wrap: wrap;
+        }
+
+        .chart-item {
+            width: 100%;
+        }
+    }
+</style>
+</head> <body> <h1><i class="fas fa-bicycle"></i> Suddivisione del Percorso del Ciclista</h1>
+<!-- Sezione Introduttiva -->
+<div id="intro-section">
+    <h2>Problema da Risolvere</h2>
+    <p>
+        Un ciclista deve percorrere <strong>120 km</strong> e deve dividere il percorso in tre tappe. Assegna una frazione a ciascuna tappa in modo che la somma totale sia pari a <strong>120 km</strong>.
+    </p>
+</div>
+
+<!-- Interazione per ciascuna tappa -->
+<div class="tappa">
+    <h2><i class="fas fa-route"></i> Assegna le Tappe</h2>
+    <table>
+        <tr>
+            <th>Tappa</th>
+            <th>Numeratore</th>
+            <th>Denominatore</th>
+            <th>Frazione</th>
+            <th>Chilometri</th>
+        </tr>
+        <tr>
+            <td>Tappa 1</td>
+            <td class="fraction-buttons">
+                <button onclick="cambiaNumeratore(1, -1)"><i class="fas fa-minus"></i></button>
+                <input type="number" id="numeratore1" value="1" min="1" readonly>
+                <button onclick="cambiaNumeratore(1, 1)"><i class="fas fa-plus"></i></button>
+            </td>
+            <td>
+                <select id="denominatore1" onchange="aggiornaFrazione(1)">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                </select>
+            </td>
+            <td><span id="frazione1">1/4</span></td>
+            <td><span id="chilometri1">30 km</span></td>
+        </tr>
+        <tr>
+            <td>Tappa 2</td>
+            <td class="fraction-buttons">
+                <button onclick="cambiaNumeratore(2, -1)"><i class="fas fa-minus"></i></button>
+                <input type="number" id="numeratore2" value="1" min="1" readonly>
+                <button onclick="cambiaNumeratore(2, 1)"><i class="fas fa-plus"></i></button>
+            </td>
+            <td>
+                <select id="denominatore2" onchange="aggiornaFrazione(2)">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                </select>
+            </td>
+            <td><span id="frazione2">1/4</span></td>
+            <td><span id="chilometri2">30 km</span></td>
+        </tr>
+        <tr>
+            <td>Tappa 3</td>
+            <td class="fraction-buttons">
+                <button onclick="cambiaNumeratore(3, -1)"><i class="fas fa-minus"></i></button>
+                <input type="number" id="numeratore3" value="1" min="1" readonly>
+                <button onclick="cambiaNumeratore(3, 1)"><i class="fas fa-plus"></i></button>
+            </td>
+            <td>
+                <select id="denominatore3" onchange="aggiornaFrazione(3)">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4" selected>4</option>
+                    <option value="6">6</option>
+                    <option value="8">8</option>
+                    <option value="12">12</option>
+                </select>
+            </td>
+            <td><span id="frazione3">1/4</span></td>
+            <td><span id="chilometri3">30 km</span></td>
+        </tr>
+    </table>
+</div>
+
+<!-- Totale dei chilometri -->
+<p style="text-align: center; font-size: 1.2em;">Totale chilometri calcolati: <span id="total-km">90 km</span> su 120 km</p>
+
+<!-- Messaggio di errore -->
+<p id="error-message" class="error-message"></p>
+
+<!-- Grafici delle Tappe -->
+<h2><i class="fas fa-chart-pie"></i> Grafici delle Tappe</h2>
+<div id="chart-container">
+    <div class="chart-wrapper">
+        <div class="chart-item">
+            <canvas id="chart1"></canvas>
+            <p>Tappa 1</p>
+        </div>
+        <div class="chart-item">
+            <canvas id="chart2"></canvas>
+            <p>Tappa 2</p>
+        </div>
+        <div class="chart-item">
+            <canvas id="chart3"></canvas>
+            <p>Tappa 3</p>
+        </div>
+    </div>
+</div>
+
+<!-- Grafico globale indipendente dal MCM -->
+<h2><i class="fas fa-globe"></i> Grafico del Percorso Totale</h2>
+<div id="global-chart-independent-container" style="text-align: center;">
+    <canvas id="globalChartIndependent"></canvas>
+    <p id="global-chart-independent-title">Percorso Totale</p>
+</div>
+
+<!-- Grafici con Denominatore Comune (MCM) -->
+<h2><i class="fas fa-chart-pie"></i> Grafici con Denominatore Comune (MCM)</h2>
+<div id="mcm-charts-container">
+    <div class="chart-wrapper">
+        <div class="chart-item">
+            <canvas id="mcmChart1"></canvas>
+            <p>Tappa 1 con MCM</p>
+        </div>
+        <div class="chart-item">
+            <canvas id="mcmChart2"></canvas>
+            <p>Tappa 2 con MCM</p>
+        </div>
+        <div class="chart-item">
+            <canvas id="mcmChart3"></canvas>
+            <p>Tappa 3 con MCM</p>
+        </div>
+    </div>
+</div>
+
+<!-- Grafico del Percorso Totale con MCM -->
+<h2><i class="fas fa-globe"></i> Grafico del Percorso Totale con MCM</h2>
+<div id="global-chart-container" style="text-align: center;">
+    <canvas id="globalChart"></canvas>
+    <p id="global-chart-title">Percorso Totale con MCM</p>
+</div>
+
+<!-- Tabella con Minimo Comune Multiplo dei Denominatori -->
+<div id="mcm-section">
+    <h2><i class="fas fa-calculator"></i> Minimo Comune Multiplo dei Denominatori</h2>
+    <p>
+        Il <strong>Minimo Comune Multiplo (MCM)</strong> è utile per confrontare le frazioni con denominatori diversi.
+    </p>
+    <p>
+        Denominatori selezionati: <span id="denominatori-selezionati"></span>
+    </p>
+    <p>
+        Minimo Comune Multiplo (MCM): <span id="mcm-denominatori"></span>
+    </p>
+    <!-- Tabella per le frazioni con denominatore comune -->
+    <table>
+        <tr>
+            <th>Tappa</th>
+            <th>Frazione Originale</th>
+            <th>Frazione con MCM</th>
+        </tr>
+        <tr>
+            <td>Tappa 1</td>
+            <td><span id="frazione-originale1">1/4</span></td>
+            <td><span id="frazione-equivalente1"></span></td>
+        </tr>
+        <tr>
+            <td>Tappa 2</td>
+            <td><span id="frazione-originale2">1/4</span></td>
+            <td><span id="frazione-equivalente2"></span></td>
+        </tr>
+        <tr>
+            <td>Tappa 3</td>
+            <td><span id="frazione-originale3">1/4</span></td>
+            <td><span id="frazione-equivalente3"></span></td>
+        </tr>
+    </table>
+</div>
+
+<div id="feedback"></div>
+
+<div style="text-align: center;">
+    <button id="calcola-button" onclick="calcolaTappe()"><i class="fas fa-check"></i> Verifica Suddivisione</button>
+    <button id="reset-button" onclick="resetAttività()"><i class="fas fa-undo"></i> Reset Attività</button>
+</div>
+
+<script>
+    // JavaScript
+    const totaleKm = 120;
+    let chilometriPercorsi = [30, 30, 30]; // Chilometri iniziali per le tappe
+    let frazioni = [1/4, 1/4, 1/4]; // Frazioni iniziali
+    let numeratori = [1, 1, 1];
+    let denominatori = [4, 4, 4]; // Denominatori iniziali
+    let charts = []; // Array per i grafici delle tappe (originali)
+    let mcmCharts = []; // Array per i grafici delle tappe con MCM
+    let globalChart; // Grafico globale con MCM
+    let globalChartIndependent; // Grafico globale indipendente dal MCM
+    let mcm = 4; // MCM iniziale
+
+    // Funzione per calcolare il MCD (Massimo Comun Divisore) di due numeri
+    function calcolaMCD(a, b) {
+        if (b === 0) {
+            return a;
+        }
+        return calcolaMCD(b, a % b);
+    }
+
+    // Funzione per calcolare il MCM di due numeri
+    function calcolaMCM(a, b) {
+        return Math.abs(a * b) / calcolaMCD(a, b);
+    }
+
+    // Funzione per calcolare il MCM di un array di numeri
+    function calcolaMCMArray(numeri) {
+        return numeri.reduce((mcm, numero) => calcolaMCM(mcm, numero), 1);
+    }
+
+    // Inizializzazione dei grafici
+    function creaGrafici() {
+        // Grafici originali
+        for (let i = 1; i <= 3; i++) {
+            const ctx = document.getElementById(`chart${i}`).getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            enabled: false
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            charts.push(chart);
+        }
+
+        // Grafici con MCM
+        for (let i = 1; i <= 3; i++) {
+            const ctx = document.getElementById(`mcmChart${i}`).getContext('2d');
+            const mcmChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [],
+                        borderColor: '#FFFFFF',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            enabled: false
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            mcmCharts.push(mcmChart);
+        }
+
+        // Crea il grafico globale con MCM
+        const globalCtx = document.getElementById('globalChart').getContext('2d');
+        globalChart = new Chart(globalCtx, {
+            type: 'pie',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [],
+                    borderColor: '#FFFFFF',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        enabled: false
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Crea il grafico globale indipendente dal MCM
+        const globalIndependentCtx = document.getElementById('globalChartIndependent').getContext('2d');
+        globalChartIndependent = new Chart(globalIndependentCtx, {
+            type: 'pie',
+            data: {
+                labels: [],
+                datasets: [{
+                    data: [],
+                    backgroundColor: [],
+                    borderColor: '#FFFFFF',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: false,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        enabled: false
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Aggiorna i grafici delle tappe
+    function aggiornaGrafici() {
+        for (let i = 0; i < 3; i++) {
+            const chart = charts[i];
+            const numeratore = numeratori[i];
+            const denominatore = denominatori[i];
+
+            let labels = [];
+            let data = [];
+            let backgroundColor = [];
+            let coloreTappa = ['#FF6384', '#36A2EB', '#FFCE56'][i];
+
+            // Crea le fette per la tappa con i denominatori originali
+            for (let j = 0; j < denominatore; j++) {
+                labels.push('');
+                data.push(1);
+                if (j < numeratore) {
+                    backgroundColor.push(coloreTappa);
+                } else {
+                    backgroundColor.push('#CCCCCC');
+                }
+            }
+
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.data.datasets[0].backgroundColor = backgroundColor;
+            chart.update();
+        }
+
+        // Aggiorna i grafici delle tappe con MCM
+        aggiornaGraficiMCM();
+
+        // Aggiorna il grafico globale con MCM
+        aggiornaGraficoGlobale();
+
+        // Aggiorna il grafico globale indipendente dal MCM
+        aggiornaGraficoGlobaleIndipendente();
+    }
+
+    // Aggiorna i grafici delle tappe con MCM
+    function aggiornaGraficiMCM() {
+        for (let i = 0; i < 3; i++) {
+            const mcmChart = mcmCharts[i];
+            const numeratore = numeratori[i];
+            const denominatore = denominatori[i];
+
+            // Calcola la frazione equivalente con MCM come denominatore
+            const numeratoreEquivalente = numeratore * (mcm / denominatore);
+
+            let labels = [];
+            let data = [];
+            let backgroundColor = [];
+            let coloreTappa = ['#FF6384', '#36A2EB', '#FFCE56'][i];
+
+            // Crea le fette per la tappa basate sul MCM
+            for (let j = 0; j < mcm; j++) {
+                labels.push('');
+                data.push(1);
+                if (j < numeratoreEquivalente) {
+                    backgroundColor.push(coloreTappa);
+                } else {
+                    backgroundColor.push('#CCCCCC');
+                }
+            }
+
+            mcmChart.data.labels = labels;
+            mcmChart.data.datasets[0].data = data;
+            mcmChart.data.datasets[0].backgroundColor = backgroundColor;
+            mcmChart.update();
+        }
+    }
+
+    // Aggiorna il grafico globale con MCM
+    function aggiornaGraficoGlobale() {
+        let datiGlobali = [];
+        let coloriGlobali = [];
+        let etichetteGlobali = [];
+
+        for (let i = 0; i < 3; i++) {
+            const numeratore = numeratori[i];
+            const denominatore = denominatori[i];
+
+            // Calcola la frazione equivalente con MCM come denominatore
+            const numeratoreEquivalente = numeratore * (mcm / denominatore);
+
+            let coloreTappa = ['#FF6384', '#36A2EB', '#FFCE56'][i];
+
+            // Aggiungi i dati per il grafico globale con MCM
+            for (let j = 0; j < numeratoreEquivalente; j++) {
+                datiGlobali.push(1);
+                coloriGlobali.push(coloreTappa);
+                etichetteGlobali.push(`Tappa ${i + 1} - Parte ${j + 1}`);
+            }
+        }
+
+        // Aggiungi il percorso rimanente se necessario
+        const sommaNumeratoriEquivalenti = numeratori.reduce((sum, num, idx) => sum + num * (mcm / denominatori[idx]), 0);
+        const partiRimanenti = mcm - sommaNumeratoriEquivalenti;
+
+        if (partiRimanenti > 0) {
+            for (let j = 0; j < partiRimanenti; j++) {
+                datiGlobali.push(1);
+                coloriGlobali.push('#999999');
+                etichetteGlobali.push('Percorso Rimanente');
+            }
+        }
+
+        globalChart.data.labels = etichetteGlobali;
+        globalChart.data.datasets[0].data = datiGlobali;
+        globalChart.data.datasets[0].backgroundColor = coloriGlobali;
+        globalChart.update();
+    }
+
+    // Aggiorna il grafico globale indipendente dal MCM
+    function aggiornaGraficoGlobaleIndipendente() {
+        let datiGlobali = [];
+        let coloriGlobali = [];
+        let etichetteGlobali = [];
+
+        for (let i = 0; i < 3; i++) {
+            const numeratore = numeratori[i];
+            const denominatore = denominatori[i];
+
+            let coloreTappa = ['#FF6384', '#36A2EB', '#FFCE56'][i];
+
+            // Aggiungi i dati per il grafico globale indipendente
+            datiGlobali.push(frazioni[i]);
+            coloriGlobali.push(coloreTappa);
+            etichetteGlobali.push(`Tappa ${i + 1}`);
+        }
+
+        // Aggiungi il percorso rimanente se necessario
+        const sommaFrazioni = frazioni.reduce((a, b) => a + b, 0);
+        if (sommaFrazioni < 1) {
+            datiGlobali.push(1 - sommaFrazioni);
+            coloriGlobali.push('#999999');
+            etichetteGlobali.push('Percorso Rimanente');
+        }
+
+        globalChartIndependent.data.labels = etichetteGlobali;
+        globalChartIndependent.data.datasets[0].data = datiGlobali;
+        globalChartIndependent.data.datasets[0].backgroundColor = coloriGlobali;
+        globalChartIndependent.update();
+    }
+
+    // Cambia il numeratore di una tappa
+    function cambiaNumeratore(tappa, incremento) {
+        const numeratoreInput = document.getElementById(`numeratore${tappa}`);
+        const denominatore = denominatori[tappa - 1];
+        let numeratore = numeratori[tappa - 1];
+
+        numeratore += incremento;
+
+        if (numeratore < 1) numeratore = 1;
+        if (numeratore > denominatore) numeratore = denominatore;
+
+        // Controllo per non superare il totale
+        let nuovaFrazione = numeratore / denominatore;
+        let sommaAltreFrazioni = 0;
+        for (let i = 0; i < 3; i++) {
+            if ((i + 1) !== tappa) {
+                sommaAltreFrazioni += frazioni[i];
+            }
+        }
+
+        if (nuovaFrazione + sommaAltreFrazioni > 1) {
+            document.getElementById('error-message').innerText = 'Non puoi aumentare oltre questo valore: supereresti il totale.';
+            // Disabilita il pulsante "+"
+            const plusButton = numeratoreInput.parentElement.querySelector('button:nth-child(3)');
+            plusButton.disabled = true;
+            return;
+        } else {
+            document.getElementById('error-message').innerText = '';
+            // Abilita tutti i pulsanti "+"
+            const allPlusButtons = document.querySelectorAll('.fraction-buttons button:nth-child(3)');
+            allPlusButtons.forEach(button => button.disabled = false);
+        }
+
+        numeratori[tappa - 1] = numeratore;
+        numeratoreInput.value = numeratore;
+        aggiornaFrazione(tappa);
+    }
+
+    // Aggiorna la frazione e i chilometri di una tappa
+    function aggiornaFrazione(tappa) {
+        numeratori[tappa - 1] = parseInt(document.getElementById(`numeratore${tappa}`).value);
+        denominatori[tappa - 1] = parseInt(document.getElementById(`denominatore${tappa}`).value);
+        const numeratore = numeratori[tappa - 1];
+        const denominatore = denominatori[tappa - 1];
+        const frazione = numeratore / denominatore;
+        frazioni[tappa - 1] = frazione;
+
+        document.getElementById(`frazione${tappa}`).innerText = `${numeratore}/${denominatore}`;
+        const chilometri = totaleKm * frazione;
+        chilometriPercorsi[tappa - 1] = chilometri;
+        document.getElementById(`chilometri${tappa}`).innerText = `${chilometri.toFixed(2)} km`;
+
+        document.getElementById(`frazione-originale${tappa}`).innerText = `${numeratore}/${denominatore}`;
+
+        // Aggiorna il totale e il feedback
+        aggiornaTotaleChilometri();
+        aggiornaDenominatoriELCM();
+        aggiornaGrafici();
+        controllaIncrementiPossibili();
+    }
+
+    // Aggiorna il totale dei chilometri calcolati
+    function aggiornaTotaleChilometri() {
+        const kmTotali = chilometriPercorsi.reduce((a, b) => a + b, 0);
+        document.getElementById('total-km').innerText = `${kmTotali.toFixed(2)} km`;
+
+        // Aggiorna il feedback in tempo reale
+        if (Math.abs(kmTotali - totaleKm) < 0.01) {
+            document.getElementById('feedback').innerText = `Ottimo! La somma dei chilometri è esattamente ${totaleKm} km.`;
+            document.getElementById('feedback').style.color = 'green';
+        } else if (kmTotali > totaleKm) {
+            document.getElementById('feedback').innerText = `Attenzione: la somma dei chilometri supera il totale di ${totaleKm} km.`;
+            document.getElementById('feedback').style.color = 'red';
+        } else {
+            const kmRimanenti = totaleKm - kmTotali;
+            document.getElementById('feedback').innerText = `Mancano ${kmRimanenti.toFixed(2)} km per raggiungere il totale di ${totaleKm} km.`;
+            document.getElementById('feedback').style.color = 'orange';
+        }
+    }
+
+    // Controlla se è possibile incrementare i numeratori senza superare il totale
+    function controllaIncrementiPossibili() {
+        for (let tappa = 1; tappa <= 3; tappa++) {
+            const numeratoreInput = document.getElementById(`numeratore${tappa}`);
+            const plusButton = numeratoreInput.parentElement.querySelector('button:nth-child(3)');
+            const denominatore = denominatori[tappa - 1];
+            let numeratore = numeratori[tappa - 1];
+
+            let frazioneAttuale = numeratore / denominatore;
+            let sommaAltreFrazioni = 0;
+            for (let i = 0; i < 3; i++) {
+                if ((i + 1) !== tappa) {
+                    sommaAltreFrazioni += frazioni[i];
+                }
+            }
+
+            if (frazioneAttuale >= 1 || frazioneAttuale + sommaAltreFrazioni >= 1) {
+                plusButton.disabled = true;
+            } else {
+                plusButton.disabled = false;
+            }
+        }
+    }
+
+    // Calcola le tappe e verifica se la somma delle frazioni è 1
+    function calcolaTappe() {
+        const sommaFrazioni = frazioni.reduce((a, b) => a + b, 0);
+
+        if (Math.abs(sommaFrazioni - 1) > 0.0001) {
+            document.getElementById('feedback').innerText = `La somma delle frazioni è ${sommaFrazioni.toFixed(2)}. Deve essere pari a 1. Regola i numeratori o i denominatori.`;
+            document.getElementById('feedback').style.color = 'red';
+        } else {
+            document.getElementById('feedback').innerText = `Ottimo! Hai suddiviso correttamente il percorso di ${totaleKm} km tra le tre tappe.`;
+            document.getElementById('feedback').style.color = 'green';
+        }
+
+        aggiornaTotaleChilometri();
+        aggiornaDenominatoriELCM();
+        aggiornaGrafici();
+    }
+
+    // Aggiorna la visualizzazione dei denominatori e del MCM
+    function aggiornaDenominatoriELCM() {
+        // Ottieni i denominatori
+        const denominatoriSelezionati = denominatori;
+        // Mostra i denominatori selezionati
+        document.getElementById('denominatori-selezionati').innerText = denominatoriSelezionati.join(', ');
+        // Calcola il MCM
+        mcm = calcolaMCMArray(denominatoriSelezionati);
+        document.getElementById('mcm-denominatori').innerText = mcm;
+        // Aggiorna le frazioni equivalenti con il MCM come denominatore
+        for (let tappa = 1; tappa <= 3; tappa++) {
+            const numeratore = numeratori[tappa - 1];
+            const denominatore = denominatori[tappa - 1];
+            const numeratoreEquivalente = numeratore * (mcm / denominatore);
+            document.getElementById(`frazione-equivalente${tappa}`).innerText = `${numeratoreEquivalente}/${mcm}`;
+            document.getElementById(`frazione-originale${tappa}`).innerText = `${numeratore}/${denominatore}`;
+        }
+    }
+
+    // Reset dell'attività
+    function resetAttività() {
+        // Resetta i valori iniziali
+        numeratori = [1, 1, 1];
+        denominatori = [4, 4, 4];
+        chilometriPercorsi = [];
+        frazioni = [];
+
+        for (let tappa = 1; tappa <= 3; tappa++) {
+            document.getElementById(`numeratore${tappa}`).value = numeratori[tappa - 1];
+            document.getElementById(`denominatore${tappa}`).value = denominatori[tappa - 1];
+            document.getElementById(`numeratore${tappa}`).readOnly = false;
+            document.getElementById(`frazione${tappa}`).innerText = `${numeratori[tappa - 1]}/${denominatori[tappa - 1]}`;
+            const frazione = numeratori[tappa - 1] / denominatori[tappa - 1];
+            frazioni.push(frazione);
+            const chilometri = totaleKm * frazione;
+            chilometriPercorsi.push(chilometri);
+            document.getElementById(`chilometri${tappa}`).innerText = `${chilometri.toFixed(2)} km`;
+            document.getElementById(`frazione-originale${tappa}`).innerText = `${numeratori[tappa - 1]}/${denominatori[tappa - 1]}`;
+            document.getElementById(`frazione-equivalente${tappa}`).innerText = '';
+        }
+
+        document.getElementById('feedback').innerText = '';
+        document.getElementById('error-message').innerText = '';
+        document.getElementById('total-km').innerText = `${(chilometriPercorsi.reduce((a, b) => a + b, 0)).toFixed(2)} km`;
+        // Abilita tutti i pulsanti "+"
+        const allPlusButtons = document.querySelectorAll('.fraction-buttons button:nth-child(3)');
+        allPlusButtons.forEach(button => button.disabled = false);
+        aggiornaTotaleChilometri();
+        aggiornaDenominatoriELCM();
+        aggiornaGrafici();
+    }
+
+    // Avvio
+    creaGrafici();
+    aggiornaFrazione(1);
+    aggiornaFrazione(2);
+    aggiornaFrazione(3);
+    aggiornaTotaleChilometri();
+    controllaIncrementiPossibili();
+    aggiornaDenominatoriELCM();
+    aggiornaGrafici();
+    aggiornaGraficoGlobaleIndipendente();
+</script>
+</body> </html>
