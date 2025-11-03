@@ -1,253 +1,324 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Pizza: perché servono spicchi uguali (MCM)</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Somma di frazioni con le pizze (MCM degli spicchi)</title>
 <style>
   :root{
-    --bg:#f6f9ff; --ink:#0f172a; --card:#ffffff; --grid:#dbe3ef;
-    --a:#2563eb; --b:#16a34a; --good:#0a7d32; --bad:#b91c1c; --line:#93a7bd55;
+    --bg:#f7faff; --card:#ffffff; --ink:#0f172a; --grid:#d8e0ea;
+    --a:#2563eb; --b:#16a34a; --mix:#7c3aed; --resto:#cbd5e1; --ok:#0a7d32; --warn:#b45309; --err:#b91c1c;
   }
   *{box-sizing:border-box}
-  body{margin:0; background:var(--bg); color:var(--ink); font-family:system-ui,Segoe UI,Roboto,Arial}
-  .wrap{max-width:920px; margin:0 auto; padding:16px}
-  .top{position:sticky; top:0; z-index:5; background:var(--bg)}
-  .prompt{
-    background:var(--card); border:1px solid var(--grid); border-radius:16px;
-    padding:12px 16px; font-size:1.22rem; font-weight:800; text-align:center
-  }
-  .guide{margin-top:8px; text-align:center; font-size:1.05rem; font-weight:600; color:#0b3a6f}
-  .stepper{display:flex; gap:8px; justify-content:center; margin:10px 0 6px}
-  .dot{width:10px; height:10px; border-radius:50%; background:#cbd5e1; border:1px solid var(--grid)}
-  .dot.on{background:#0ea5e9}
-  .card{background:var(--card); border:1px solid var(--grid); border-radius:18px; padding:16px; margin:12px 0}
-  .center{display:flex; align-items:center; justify-content:center}
-  .grid{display:grid; gap:14px}
-  .g2{grid-template-columns:1fr 1fr}
-  @media (max-width:800px){ .g2{grid-template-columns:1fr} }
-  .big-btn{
-    display:inline-flex; align-items:center; justify-content:center;
-    padding:16px 18px; border:2px solid var(--grid); border-radius:16px; font-size:1.4rem;
-    background:#fff; cursor:pointer; width:100%
-  }
-  .big-btn:active{transform:scale(0.98)}
-  .big-btn.good{border-color:var(--good)}
-  .big-btn.bad{border-color:var(--bad)}
-  .row-btns{display:grid; grid-template-columns:repeat(5,1fr); gap:10px}
-  .pie{
-    width:200px; height:200px; border-radius:50%;
-    border:10px solid #eef2f7; box-shadow:0 2px 6px rgba(0,0,0,.05); position:relative
-  }
-  .label{font-size:1.15rem; font-weight:800; text-align:center; margin-top:10px}
-  .legend{display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:6px}
-  .chip{display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border:1px solid var(--grid); border-radius:999px; background:#fff}
-  .dotc{width:12px; height:12px; border-radius:50%}
-  .a{background:var(--a)} .b{background:var(--b)}
-  .eq{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:1.35rem; text-align:center}
-  .msg{font-size:1.15rem; font-weight:800; text-align:center; margin-top:10px}
-  .ok{color:var(--good)} .err{color:var(--bad)}
-  .hidden{display:none}
-  .actions{display:flex; gap:10px; justify-content:center; margin-top:10px}
-  .pill{padding:8px 14px; border:1px solid var(--grid); border-radius:999px; background:#fff; font-weight:700; cursor:pointer}
-  .bar{height:22px; border-radius:999px; border:1px solid var(--grid); overflow:hidden; background:#eef3fb}
-  .seg{height:100%}
-  .why{background:#fffaf2; border:1px solid #f4e4c3; border-radius:16px; padding:12px; font-weight:700}
-  .why p{margin:6px 0; font-size:1rem}
-  .mini{font-size:.95rem; color:#334155}
+  body{margin:0; padding:20px; background:var(--bg); color:var(--ink); font-family:system-ui,Segoe UI,Roboto,Arial; line-height:1.5}
+  .wrap{max-width:1100px; margin:0 auto}
+  h1,h2{margin:0 0 12px}
+  p{margin:8px 0}
+  .card{background:var(--card); border:1px solid var(--grid); border-radius:14px; padding:16px; margin:12px 0}
+  .grid{display:grid; gap:12px}
+  .g-2{grid-template-columns:1fr 1fr}
+  .g-3{grid-template-columns:repeat(3,1fr)}
+  @media (max-width:900px){ .g-2,.g-3{grid-template-columns:1fr} }
+  label{font-weight:600}
+  input[type="number"]{width:110px; padding:6px; border:1px solid var(--grid); border-radius:10px}
+  .small{font-size:.95rem; color:#5b6470}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
+  .legend{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .chip{display:inline-flex; gap:6px; align-items:center; border:1px solid var(--grid); padding:4px 8px; border-radius:999px; background:#fff}
+  .dot{width:12px; height:12px; border-radius:50%}
+  .dot.A{background:var(--a)} .dot.B{background:var(--b)} .dot.M{background:var(--mix)} .dot.R{background:var(--resto)}
+  .msg{font-weight:700; margin-top:6px}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)}
+  .pizzaBox{display:flex; flex-direction:column; align-items:center; gap:8px}
+  svg{max-width:280px; width:100%; height:auto}
+  .frac{font-weight:700}
+  .eq{background:#f6f7fb; border:1px solid var(--grid); border-radius:10px; padding:8px}
+  .btnrow{display:flex; gap:10px; flex-wrap:wrap}
+  button{border:1px solid var(--grid); background:#fff; padding:6px 10px; border-radius:10px; cursor:pointer}
+  button:hover{background:#f3f4f6}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <!-- CONSEGNA PRATICA + GUIDA -->
-  <div class="top" aria-live="polite">
-    <div class="prompt" id="prompt">
-      Problema: dobbiamo mettere sullo stesso piatto <b>1/2 pizza</b> (A) e <b>1/3 pizza</b> (B). <u>In quanti spicchi uguali</u> tagliamo la pizza per poterle sommare?
+  <h1>Somma di frazioni con le pizze: perché serve l’MCM</h1>
+
+  <div class="card">
+    <p><strong>Idea chiave.</strong> Una pizza A è tagliata in <span class="mono">denA</span> spicchi, una pizza B in <span class="mono">denB</span> spicchi. Se prendo <span class="mono">numA</span> spicchi dalla pizza A e <span class="mono">numB</span> spicchi dalla pizza B, ho due frazioni <span class="mono">numA/denA</span> e <span class="mono">numB/denB</span>. Per sommarle in modo corretto devo riferirmi alla <u>stessa unità di misura</u> degli spicchi: uso il <strong>Minimo Comune Multiplo (MCM)</strong> dei denominatori per ottenere spicchi tutti uguali e quindi sommare.</p>
+    <div class="legend">
+      <span class="chip"><span class="dot A"></span> Spicchi presi da pizza A</span>
+      <span class="chip"><span class="dot B"></span> Spicchi presi da pizza B</span>
+      <span class="chip"><span class="dot M"></span> Somma su pizza MCM</span>
+      <span class="chip"><span class="dot R"></span> Spicchi rimanenti (vuoti)</span>
     </div>
-    <div class="guide" id="guide">Guida: tocca il numero degli spicchi. Devono andare bene per <b>A e B</b>.</div>
-    <div class="stepper"><span class="dot on" id="d1"></span><span class="dot" id="d2"></span><span class="dot" id="d3"></span></div>
   </div>
 
-  <!-- STEP 1 -->
-  <section class="card" id="s1" aria-label="Step 1">
-    <div class="grid g2">
-      <div class="center">
-        <div>
-          <div class="center"><div class="pie" id="pieA" aria-label="Pizza A 1/2"></div></div>
-          <div class="label">A = 1/2 pizza</div>
-        </div>
-      </div>
-      <div class="center">
-        <div>
-          <div class="center"><div class="pie" id="pieB" aria-label="Pizza B 1/3"></div></div>
-          <div class="label">B = 1/3 pizza</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="legend">
-      <span class="chip"><span class="dotc a"></span> A</span>
-      <span class="chip"><span class="dotc b"></span> B</span>
-      <span class="chip">🍕 spicchi uguali</span>
-    </div>
-
-    <div style="height:12px"></div>
-    <div class="row-btns" role="group" aria-label="Scegli il numero di spicchi">
-      <button class="big-btn" data-n="2">2</button>
-      <button class="big-btn" data-n="3">3</button>
-      <button class="big-btn" data-n="4">4</button>
-      <button class="big-btn" data-n="5">5</button>
-      <button class="big-btn" data-n="6">6</button>
-    </div>
-    <div class="msg" id="msg1"></div>
-
-    <!-- perché servono spicchi uguali (pratico) -->
-    <div class="why" style="margin-top:12px">
-      <p>Perché spicchi uguali? <span class="mini">Così i pezzi hanno la <b>stessa grandezza</b> → li conti e li sommi senza “barare”.</span></p>
-      <p class="mini">È come usare lo <b>stesso righello</b>: se A misura in “mezzi” e B in “terzi”, non combacia. Con 6 spicchi, <b>parlano la stessa lingua</b>.</p>
-    </div>
-  </section>
-
-  <!-- STEP 2 -->
-  <section class="card hidden" id="s2" aria-label="Step 2">
-    <div class="eq" id="eq2">1/2 ⟶ 3/6  1/3 ⟶ 2/6</div>
-    <div style="height:10px"></div>
-    <div class="grid g2">
+  <!-- Impostazioni: numeri modificabili -->
+  <div class="card">
+    <h2>Imposta i numeri</h2>
+    <p class="small">Esempio iniziale: A = <strong>1/2</strong> (1 spicchio su 2), B = <strong>1/3</strong> (1 spicchio su 3). Puoi cambiare numeratori e denominatori.</p>
+    <div class="grid g-3">
       <div>
-        <div class="label">A in 6 spicchi</div>
-        <div class="bar"><div class="seg" id="barA" style="width:50%; background:var(--a)"></div></div>
+        <label>Pizza A – numeratore (spicchi presi)</label><br>
+        <input id="numA" type="number" min="0" value="1" oninput="ricalcola()" />
       </div>
       <div>
-        <div class="label">B in 6 spicchi</div>
-        <div class="bar"><div class="seg" id="barB" style="width:33.333%; background:var(--b)"></div></div>
+        <label>Pizza A – denominatore (spicchi totali)</label><br>
+        <input id="denA" type="number" min="1" value="2" oninput="ricalcola()" />
+      </div>
+      <div class="small">
+        <strong>Frazione A</strong>: <span id="fracA" class="frac">1/2</span>
+      </div>
+
+      <div>
+        <label>Pizza B – numeratore (spicchi presi)</label><br>
+        <input id="numB" type="number" min="0" value="1" oninput="ricalcola()" />
+      </div>
+      <div>
+        <label>Pizza B – denominatore (spicchi totali)</label><br>
+        <input id="denB" type="number" min="1" value="3" oninput="ricalcola()" />
+      </div>
+      <div class="small">
+        <strong>Frazione B</strong>: <span id="fracB" class="frac">1/3</span>
       </div>
     </div>
-    <div class="actions">
-      <button class="pill" id="goJoin">Metti insieme</button>
-      <button class="pill" id="back1">Indietro</button>
+    <div class="btnrow" style="margin-top:8px">
+      <button onclick="preset(1,2,1,3)">Preset: 1/2 + 1/3</button>
+      <button onclick="preset(1,3,1,4)">Preset: 1/3 + 1/4</button>
+      <button onclick="preset(2,5,1,2)">Preset: 2/5 + 1/2</button>
+      <button onclick="preset(3,8,1,6)">Preset: 3/8 + 1/6</button>
     </div>
-  </section>
+  </div>
 
-  <!-- STEP 3 -->
-  <section class="card hidden" id="s3" aria-label="Step 3">
-    <div class="eq" id="eq3">3/6 + 2/6 = <b>5/6</b> di pizza</div>
-    <div style="height:10px"></div>
-    <div class="bar">
-      <div class="seg" id="barSum" style="width:83.333%; background:linear-gradient(90deg, var(--a) 0 60%, var(--b) 60% 100%)"></div>
+  <!-- Visualizzazione pizze originali -->
+  <div class="card">
+    <h2>Le due pizze originali</h2>
+    <div class="grid g-2">
+      <div class="pizzaBox">
+        <div id="pizzaA"></div>
+        <div class="small mono" id="labelA">A: 1/2</div>
+      </div>
+      <div class="pizzaBox">
+        <div id="pizzaB"></div>
+        <div class="small mono" id="labelB">B: 1/3</div>
+      </div>
     </div>
-    <div class="msg ok">Risultato: <b>5 spicchi su 6</b> nello stesso piatto.</div>
-    <div class="actions">
-      <button class="pill" id="retry">Ricomincia</button>
+  </div>
+
+  <!-- Somma con MCM dei denominatori -->
+  <div class="card">
+    <h2>Somma con denominatore comune (MCM)</h2>
+    <p class="mono" id="mcmText">MCM(2, 3) = 6</p>
+    <p class="eq mono" id="sommaEq">1/2 + 1/3 = 3/6 + 2/6 = <strong>5/6</strong></p>
+    <div class="pizzaBox">
+      <div id="pizzaMCM"></div>
+      <div class="small">Sulla pizza “portata” a <em>6 spicchi</em>, coloro <em>3 spicchi</em> di A (blu) e <em>2 spicchi</em> di B (verde): restano 1 spicchio vuoto.</div>
     </div>
-  </section>
+    <p class="msg" id="msgInfo"></p>
+  </div>
 </div>
 
 <script>
-/* — Utility visuali — */
-function pieFill(parts, fillParts, color){
-  const step = 360/parts, end = step*fillParts;
-  return `conic-gradient(${color} 0 ${end}deg, #e5ecf6 ${end}deg 360deg)`;
-}
-function pieGrid(parts){
-  // lineetta ogni fetta (1° di spessore circa)
-  const step = 360/parts, thin = Math.max(0.8, 360/(parts*180)); // ~1°
-  return `repeating-conic-gradient(from 0deg, transparent 0 ${step-thin}deg, var(--line) ${step-thin}deg ${step}deg)`;
-}
-function drawPizza(el, parts, fillParts, color){
-  el.style.background = `${pieFill(parts, fillParts, color)}, ${pieGrid(parts)}`;
-}
+/* ===========
+   Matematica
+   =========== */
+function MCD(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){const t=b; b=a%b; a=t;} return a||1; }
+function MCM(a,b){ return Math.abs(a*b)/MCD(a,b); }
+function semplifica(n,d){ const g=MCD(n,d); return [n/g, d/g]; }
+function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
 
-const css = getComputedStyle(document.documentElement);
-const pieA = document.getElementById('pieA');
-const pieB = document.getElementById('pieB');
-// Iniziale: si vedono le frazioni originali SENZA griglia comune
-pieA.style.background = pieFill(2,1, css.getPropertyValue('--a'));
-pieB.style.background = pieFill(3,1, css.getPropertyValue('--b'));
+/* =========================
+   Disegno pizza via SVG
+   ========================= */
+function deg2rad(deg){ return deg*Math.PI/180; }
 
-/* — Stato e step — */
-const promptEl = document.getElementById('prompt');
-const guideEl  = document.getElementById('guide');
-const d1 = document.getElementById('d1'), d2 = document.getElementById('d2'), d3 = document.getElementById('d3');
-const s1 = document.getElementById('s1'), s2 = document.getElementById('s2'), s3 = document.getElementById('s3');
-const msg1 = document.getElementById('msg1');
-const buttons = Array.from(document.querySelectorAll('.row-btns .big-btn'));
-const eq2 = document.getElementById('eq2'), eq3 = document.getElementById('eq3');
-const barA = document.getElementById('barA'), barB = document.getElementById('barB'), barSum = document.getElementById('barSum');
+// Disegna una pizza con 'den' spicchi; ne colora 'num' (dalla posizione 0 in avanti).
+// colorFilled: colore spicchi pieni; colorEmpty: spicchi vuoti
+function drawPizza(containerId, den, num, colorFilled, colorEmpty="#ffffff"){
+  const size = 260; const r = 110; const cx = 130; const cy = 130;
+  num = clamp(num, 0, den);
 
-function setStep(n){
-  [d1,d2,d3].forEach((dot,i)=>dot.classList.toggle('on', i < n));
-  s1.classList.toggle('hidden', n!==1);
-  s2.classList.toggle('hidden', n!==2);
-  s3.classList.toggle('hidden', n!==3);
+  // costruzione SVG
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS,"svg");
+  svg.setAttribute("viewBox","0 0 260 260");
+  svg.setAttribute("role","img");
+  svg.setAttribute("aria-label", `Pizza con ${den} spicchi, ${num} colorati`);
 
-  if(n===1){
-    promptEl.innerHTML = 'Problema: dobbiamo mettere sullo stesso piatto <b>1/2 pizza</b> (A) e <b>1/3 pizza</b> (B). <u>In quanti spicchi uguali</u> tagliamo la pizza per poterle sommare?';
-    guideEl.textContent  = 'Guida: tocca il numero degli spicchi. Devono andare bene per entrambe.';
-    // mostra frazioni originali senza griglia comune
-    pieA.style.background = pieFill(2,1, css.getPropertyValue('--a'));
-    pieB.style.background = pieFill(3,1, css.getPropertyValue('--b'));
+  // base (bordo pizza)
+  const base = document.createElementNS(svgNS,"circle");
+  base.setAttribute("cx",cx); base.setAttribute("cy",cy); base.setAttribute("r", r+8);
+  base.setAttribute("fill","#f5d0a1"); base.setAttribute("stroke","#caaa77"); base.setAttribute("stroke-width","4");
+  svg.appendChild(base);
+
+  const angleStep = 360/den;
+  for(let i=0;i<den;i++){
+    const start = -90 + i*angleStep;       // inizio spicchio (ore 12 = -90°)
+    const end   = start + angleStep;
+    const large = angleStep>180 ? 1 : 0;
+    const x1 = cx + r*Math.cos(deg2rad(start));
+    const y1 = cy + r*Math.sin(deg2rad(start));
+    const x2 = cx + r*Math.cos(deg2rad(end));
+    const y2 = cy + r*Math.sin(deg2rad(end));
+
+    const path = document.createElementNS(svgNS,"path");
+    const d = [
+      `M ${cx} ${cy}`,
+      `L ${x1} ${y1}`,
+      `A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`,
+      "Z"
+    ].join(" ");
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", "#e2e8f0");
+    path.setAttribute("stroke-width", "1");
+    path.setAttribute("fill", i < num ? colorFilled : colorEmpty);
+    svg.appendChild(path);
   }
-  if(n===2){
-    promptEl.textContent = 'Ora entrambe le pizze hanno 6 spicchi (uguali).';
-    guideEl.textContent  = 'Guida: tocca “Metti insieme”.';
-  }
-  if(n===3){
-    promptEl.textContent = 'Abbiamo messo insieme le pizze nello stesso piatto.';
-    guideEl.textContent  = 'Guida: guarda il risultato. Tocca “Ricomincia” per rifare.';
+
+  // bordo interno
+  const inner = document.createElementNS(svgNS,"circle");
+  inner.setAttribute("cx",cx); inner.setAttribute("cy",cy); inner.setAttribute("r", r);
+  inner.setAttribute("fill","none"); inner.setAttribute("stroke","#e2e8f0"); inner.setAttribute("stroke-width","1.2");
+  svg.appendChild(inner);
+
+  const box = document.getElementById(containerId);
+  box.innerHTML = "";
+  box.appendChild(svg);
+}
+
+/* =========================
+   Stato e DOM references
+   ========================= */
+const numAEl = document.getElementById('numA');
+const denAEl = document.getElementById('denA');
+const numBEl = document.getElementById('numB');
+const denBEl = document.getElementById('denB');
+
+const fracAEl = document.getElementById('fracA');
+const fracBEl = document.getElementById('fracB');
+const pizzaACont = document.getElementById('pizzaA');
+const pizzaBCont = document.getElementById('pizzaB');
+const labelA = document.getElementById('labelA');
+const labelB = document.getElementById('labelB');
+
+const mcmText = document.getElementById('mcmText');
+const sommaEq = document.getElementById('sommaEq');
+const pizzaMCM = document.getElementById('pizzaMCM');
+const msgInfo = document.getElementById('msgInfo');
+
+/* =========================
+   Logica principale
+   ========================= */
+function ricalcola(){
+  // Lettura e normalizzazione dei valori
+  let numA = Math.max(0, Math.floor(+numAEl.value || 0));
+  let denA = Math.max(1, Math.floor(+denAEl.value || 1));
+  let numB = Math.max(0, Math.floor(+numBEl.value || 0));
+  let denB = Math.max(1, Math.floor(+denBEl.value || 1));
+
+  // Evita numeratore > denominatore (altrimenti >1 pizza)
+  numA = clamp(numA, 0, denA);
+  numB = clamp(numB, 0, denB);
+  numAEl.value = numA; numBEl.value = numB;
+
+  // Frazioni come testo + semplificazione
+  const [nAs, dAs] = semplifica(numA, denA);
+  const [nBs, dBs] = semplifica(numB, denB);
+  fracAEl.textContent = `${numA}/${denA}` + (nAs!==numA ? ` = ${nAs}/${dAs}` : "");
+  fracBEl.textContent = `${numB}/${denB}` + (nBs!==numB ? ` = ${nBs}/${dBs}` : "");
+
+  // Disegno delle pizze originali
+  drawPizza("pizzaA", denA, numA, "var(--a)", "#ffffff");
+  drawPizza("pizzaB", denB, numB, "var(--b)", "#ffffff");
+  labelA.textContent = `A: ${numA}/${denA}`;
+  labelB.textContent = `B: ${numB}/${denB}`;
+
+  // Somma con MCM dei denominatori (denominatore comune)
+  const mcmDen = MCM(denA, denB);
+  mcmText.textContent = `MCM(${denA}, ${denB}) = ${mcmDen}`;
+
+  const numAeq = numA * (mcmDen/denA);  // numA/denA = numAeq/mcmDen
+  const numBeq = numB * (mcmDen/denB);  // numB/denB = numBeq/mcmDen
+
+  const numSum = numAeq + numBeq;       // stessa unità → sommo i numeratori
+  const [nSumS, dSumS] = semplifica(numSum, mcmDen);
+  sommaEq.innerHTML = `${numA}/${denA} + ${numB}/${denB} = ${numAeq}/${mcmDen} + ${numBeq}/${mcmDen} = <strong>${nSumS}/${dSumS}</strong>`;
+
+  // Disegno pizza “MCM”: prima gli spicchi di A (blu), poi quelli di B (verde), poi il resto grigio
+  // Creo un SVG con due gruppi di spicchi colorati e il resto vuoto
+  drawPizzaMCM("pizzaMCM", mcmDen, numAeq, numBeq);
+
+  // Messaggio guida
+  if(numA===0 && numB===0){
+    msgInfo.className = "msg warn";
+    msgInfo.textContent = "Non hai selezionato spicchi: la somma è 0.";
+  }else if(numSum===mcmDen){
+    msgInfo.className = "msg ok";
+    msgInfo.textContent = "Hai preso l’intera pizza (somma = 1).";
+  }else if(numSum>mcmDen){
+    // In teoria non succede perché clampiamo numeratori≤denominatori, ma per completezza:
+    msgInfo.className = "msg err";
+    msgInfo.textContent = "La somma supera la pizza intera ( > 1 ).";
+  }else{
+    msgInfo.className = "msg";
+    msgInfo.textContent = "Con l’MCM rendo gli spicchi uguali: ora la somma è leggibile come parti della stessa pizza.";
   }
 }
 
-buttons.forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const n = parseInt(btn.dataset.n,10);
-    const ok = (n%2===0)&&(n%3===0); // multiplo di 2 e di 3 → 6
-    buttons.forEach(b=>b.classList.remove('good','bad'));
-    if(ok){
-      btn.classList.add('good');
-      msg1.className = 'msg ok';
-      msg1.textContent = '✅ Giusto: con 6 spicchi i pezzi sono uguali per A e per B.';
-      // Mostra SUBITO i 6 spicchi disegnati su entrambe le pizze e i riempimenti 3/6 e 2/6
-      drawPizza(pieA, 6, 3, css.getPropertyValue('--a'));
-      drawPizza(pieB, 6, 2, css.getPropertyValue('--b'));
-      // Prepara step 2 (barre in sesti)
-      eq2.textContent = '1/2 ⟶ 3/6  1/3 ⟶ 2/6';
-      barA.style.width = (3/6*100)+'%';
-      barB.style.width = (2/6*100)+'%';
-      setTimeout(()=>setStep(2), 800);
-    }else{
-      btn.classList.add('bad');
-      msg1.className = 'msg err';
-      // Visualizza per un attimo la griglia scelta (per far "sentire" che non combacia)
-      // A: n spicchi con metà piena → fillParts = n/2; B: n spicchi con un terzo pieno → fillParts = n/3 (se intero)
-      // se non è intero, disegniamo comunque la griglia per mostrare che "non torna"
-      drawPizza(pieA, n, Math.round(n/2), css.getPropertyValue('--a'));
-      drawPizza(pieB, n, Math.round(n/3), css.getPropertyValue('--b'));
-      if(n%2!==0 && n%3!==0) msg1.textContent = '❌ No: non va bene né per 1/2 né per 1/3.';
-      else if(n%2!==0)       msg1.textContent = '❌ No: non va bene per 1/2.';
-      else                   msg1.textContent = '❌ No: non va bene per 1/3.';
-      // dopo 900ms torna alle frazioni originali (senza griglia comune)
-      setTimeout(()=>{
-        if(s1.classList.contains('hidden')) return;
-        pieA.style.background = pieFill(2,1, css.getPropertyValue('--a'));
-        pieB.style.background = pieFill(3,1, css.getPropertyValue('--b'));
-      }, 900);
-    }
-  });
-});
+function drawPizzaMCM(containerId, den, numAeq, numBeq){
+  const size = 260; const r = 110; const cx = 130; const cy = 130;
+  const svgNS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(svgNS,"svg");
+  svg.setAttribute("viewBox","0 0 260 260");
+  svg.setAttribute("role","img");
+  svg.setAttribute("aria-label", `Pizza MCM con ${den} spicchi, ${numAeq} blu e ${numBeq} verdi`);
 
-document.getElementById('goJoin').addEventListener('click', ()=>{
-  eq3.innerHTML = '3/6 + 2/6 = <b>5/6</b> di pizza';
-  barSum.style.width = (5/6*100)+'%';
-  setStep(3);
-});
-document.getElementById('back1').addEventListener('click', ()=>setStep(1));
-document.getElementById('retry').addEventListener('click', ()=>{
-  buttons.forEach(b=>b.classList.remove('good','bad'));
-  msg1.textContent = '';
-  setStep(1);
-});
+  // base crosta
+  const base = document.createElementNS(svgNS,"circle");
+  base.setAttribute("cx",cx); base.setAttribute("cy",cy); base.setAttribute("r", r+8);
+  base.setAttribute("fill","#f5d0a1"); base.setAttribute("stroke","#caaa77"); base.setAttribute("stroke-width","4");
+  svg.appendChild(base);
 
-setStep(1);
+  const angleStep = 360/den;
+  for(let i=0;i<den;i++){
+    const start = -90 + i*angleStep;
+    const end   = start + angleStep;
+    const large = angleStep>180 ? 1 : 0;
+    const x1 = cx + r*Math.cos(deg2rad(start));
+    const y1 = cy + r*Math.sin(deg2rad(start));
+    const x2 = cx + r*Math.cos(deg2rad(end));
+    const y2 = cy + r*Math.sin(deg2rad(end));
+    const path = document.createElementNS(svgNS,"path");
+    const d = [`M ${cx} ${cy}`, `L ${x1} ${y1}`, `A ${r} ${r} 0 ${large} 1 ${x2} ${y2}`, "Z"].join(" ");
+    path.setAttribute("d", d);
+    path.setAttribute("stroke", "#e2e8f0");
+    path.setAttribute("stroke-width", "1");
+
+    // Colora prima A (indici 0..numAeq-1), poi B (indici successivi)
+    let fill = "var(--resto)";
+    if(i < numAeq) fill = "var(--a)";
+    else if(i < numAeq + numBeq) fill = "var(--b)";
+    path.setAttribute("fill", fill);
+    svg.appendChild(path);
+  }
+
+  const inner = document.createElementNS(svgNS,"circle");
+  inner.setAttribute("cx",cx); inner.setAttribute("cy",cy); inner.setAttribute("r", r);
+  inner.setAttribute("fill","none"); inner.setAttribute("stroke","#e2e8f0"); inner.setAttribute("stroke-width","1.2");
+  svg.appendChild(inner);
+
+  const box = document.getElementById(containerId);
+  box.innerHTML = "";
+  box.appendChild(svg);
+}
+
+/* =========================
+   Preset e avvio
+   ========================= */
+function preset(a,b,c,d){
+  numAEl.value = a; denAEl.value = b; numBEl.value = c; denBEl.value = d;
+  ricalcola();
+}
+ricalcola();
 </script>
 </body>
 </html>
