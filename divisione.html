@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dividiamo Insieme – Tema Chiaro (Tap→Assegna)</title>
+  <style>
+    :root{
+      /* Tema chiaro alto contrasto */
+      --bg: #f7fafc;           /* sfondo */
+      --card: #ffffff;         /* pannelli */
+      --ink: #0b1220;          /* testo principale */
+      --muted: #475569;        /* testo secondario */
+      --accent: #2563eb;       /* blu acceso */
+      --ok: #16a34a;           /* verde */
+      --warn: #d97706;         /* arancio */
+      --error: #dc2626;        /* rosso */
+      --border: #d6dee8;       /* bordi */
+      --focus: #93c5fd;        /* glow focus */
+      --radius: 16px;
+      --shadow: 0 10px 24px rgba(2, 6, 23, .08);
+    }
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1100px 700px at 10% -10%, #eef4ff, var(--bg));color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+    .container{max-width:960px;margin:0 auto;padding:16px}
+
+    header{margin-bottom:12px}
+    h1{font-size:clamp(28px,5vw,40px);margin:6px 0}
+    .subtitle{color:var(--muted);font-size:clamp(16px,2.6vw,18px)}
+
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+
+    /* Utility */
+    .hidden{display:none !important}
+
+    .controls{display:grid;gap:10px}
+    .group h2{font-size:18px;margin:0 0 6px}
+    .chips{display:flex;flex-wrap:wrap;gap:8px}
+    .chip{cursor:pointer;border-radius:999px;padding:10px 14px;border:2px solid var(--border);background:#f1f5f9;color:var(--ink);font-size:18px}
+    .chip[aria-pressed="true"]{background:#e2e8f0;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.18) inset}
+
+    .btn{cursor:pointer;border-radius:14px;border:2px solid transparent;padding:12px 16px;font-weight:800;font-size:18px;background:var(--accent);color:#fff}
+    .btn.secondary{background:#0f172a0d;color:var(--ink);border-color:var(--border)}
+    .btn[disabled]{opacity:.6;cursor:not-allowed}
+
+    .stage{display:grid;gap:12px;margin-top:12px}
+    @media(min-width:860px){.stage{grid-template-columns:1fr 1.2fr}}
+
+    /* Pila di oggetti visibile come oggetti reali */
+    .pile{display:grid;gap:10px}
+    .object-tray{display:grid;grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:8px;align-content:start}
+    .candy{font-size:36px;line-height:1;background:#fff;border:2px solid var(--border);border-radius:14px;display:grid;place-items:center;padding:8px;user-select:none;transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease}
+    .candy.selected{transform:scale(1.05);border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.18)}
+
+    .counter{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:clamp(18px,4.2vw,22px)}
+    .chip.readonly{background:#fff;border-color:var(--border);box-shadow:none;cursor:default}
+
+    .msg{padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--border);min-height:44px;display:flex;align-items:center;font-size:18px}
+    .msg.ok{border-color:#c6f6d5;background:#ecfdf5}
+    .msg.error{border-color:#fecaca;background:#fff1f2}
+
+    .boxes{display:grid;grid-template-columns:repeat(var(--cols,2),1fr);gap:12px}
+    .box{display:grid;grid-template-rows:auto 1fr;gap:8px;padding:12px;background:var(--card);border:2px solid var(--border);border-radius:16px}
+    .name{margin:0;font-size:18px;color:var(--muted)}
+    .name[contenteditable="true"]{padding:4px 8px;border-radius:8px;border:1px dashed transparent}
+    .name:focus{outline:3px solid var(--focus);border-color:var(--accent);background:#eef2ff}
+    .dropzone{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:8px;align-content:start}
+    .box.valid{box-shadow:0 0 0 3px rgba(22,163,74,.18) inset;border-color:#a7f3d0}
+
+    /* Barra matematica */
+    .sticky{position:sticky; top:0; z-index:50}
+    .sticky{backdrop-filter:saturate(1.2);}
+
+    /* Barra matematica */
+    .mathbar{margin-top:8px;display:grid;gap:8px}
+    .mathrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .frac{display:grid;grid-template-rows:auto 2px auto;align-items:center;min-width:140px}
+    .frac .line{height:2px;background:currentColor;opacity:.9}
+    .frac .top,.frac .bottom{font-size:22px;text-align:center}
+    .equal{font-size:28px;font-weight:800}
+    .big-input{font-size:26px;padding:10px 14px;border-radius:12px;border:2px solid var(--border);background:#fff;color:var(--ink);width:120px;text-align:center}
+
+    footer{margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+    small{color:var(--muted)}
+
+    /* Animazione: volo oggetto (FLIP semplificato) */
+    .flying{position:fixed;z-index:9999;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s;will-change:transform,opacity}
+  </style>
+</head>
+<body>
+  <div class="container" role="application" aria-label="Dividiamo Insieme – suddivisione equa (tema chiaro)">
+    <header>
+      <h1>Dividiamo Insieme!</h1>
+      <p class="subtitle">Seleziona <strong>un oggetto</strong> e poi tocca il <strong>box</strong> del bambino/ragazzo.</p>
+      <div id="controls" class="panel controls">
+        <div class="group">
+          <h2>1) Quanti destinatari?</h2>
+          <div class="chips" role="group" aria-label="Destinatari">
+            <button class="chip" data-dest="2" aria-pressed="true">2</button>
+            <button class="chip" data-dest="3">3</button>
+          </div>
+        </div>
+        <div class="group">
+          <h2>2) Quanti oggetti (totale)?</h2>
+          <div class="chips" id="qtyRow" role="group" aria-label="Quantità"></div>
+        </div>
+        <div class="group" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="start">Avvia esercizio</button>
+          <button class="btn secondary" id="reset" disabled>Riprova</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="stage">
+      <div class="panel pile">
+        <div class="counter" aria-live="polite">
+          <span id="totalLabel" class="chip readonly">Totale: —</span>
+          <span id="itemLabel" class="chip readonly">Oggetto: —</span>
+          <span id="progressLabel" class="chip readonly">Consegnati: 0</span>
+        </div>
+        <div class="object-tray" id="tray" aria-label="Oggetti da distribuire"></div>
+        <div class="msg" id="liveMsg" aria-live="polite">Scegli e premi “Avvia esercizio”.</div>
+      </div>
+      <div class="panel">
+        <div class="boxes" id="boxes" style="--cols:2" aria-label="Box destinatari">
+          <!-- generati via JS -->
+        </div>
+      </div>
+    </section>
+
+    <section class="panel mathbar" id="mathBar" hidden aria-label="Rappresentazione simbolica">
+      <div class="mathrow">
+        <div class="frac" aria-label="Divisione come linea di separazione">
+          <div class="top" id="fracTop">0</div>
+          <div class="line" role="separator" aria-hidden="true"></div>
+          <div class="bottom" id="fracBottom">0</div>
+        </div>
+        <div class="equal" aria-hidden> = </div>
+        <input class="big-input" id="answer" inputmode="numeric" pattern="[0-9]*" placeholder="?" aria-label="Quanti oggetti per ciascuno?" />
+        <button class="btn" id="check">Conferma</button>
+      </div>
+      <div class="msg" id="resultMsg" aria-live="polite"></div>
+    </section>
+
+    <footer>
+      <small>L’oggetto cambia a ogni esercizio per mantenere la motivazione.</small>
+    </footer>
+  </div>
+
+  <script>
+    // Oggetti ciclici per ogni esercizio
+    const ITEMS = [
+      {emoji:'🍬', labelSing:'caramella', labelPlur:'caramelle'},
+      {emoji:'🍫', labelSing:'cioccolatino', labelPlur:'cioccolatini'},
+      {emoji:'⚽', labelSing:'pallone', labelPlur:'palloni'},
+      {emoji:'🃏', labelSing:'carta', labelPlur:'carte'},
+      {emoji:'🍎', labelSing:'mela', labelPlur:'mele'},
+      {emoji:'🎮', labelSing:'controller', labelPlur:'controller'}
+    ];
+    let itemIndex = 0; // ruota a ogni avvio
+
+    // Stato
+    const state = { dest: 2, total: 6, remaining: 6, counts: [], selectedId: null, currentItem: ITEMS[itemIndex] };
+
+    // Riferimenti
+    const boxesEl = document.getElementById('boxes');
+    const controls = document.getElementById('controls');
+    const qtyRow = document.getElementById('qtyRow');
+    const tray = document.getElementById('tray');
+    const totalLabel = document.getElementById('totalLabel');
+    const itemLabel = document.getElementById('itemLabel');
+    const progressLabel = document.getElementById('progressLabel');
+    const liveMsg = document.getElementById('liveMsg');
+    const mathBar = document.getElementById('mathBar');
+    const fracTop = document.getElementById('fracTop');
+    const fracBottom = document.getElementById('fracBottom');
+    const resultMsg = document.getElementById('resultMsg');
+    const answer = document.getElementById('answer');
+
+    // Audio minimal
+    let audioCtx;
+    function beep(freq=660,time=.06){
+      try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+        const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.type='sine'; o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination);
+        g.gain.setValueAtTime(0.0001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.25,audioCtx.currentTime+.01); g.gain.exponentialRampToValueAtTime(0.0001,audioCtx.currentTime+time);
+        o.start(); o.stop(audioCtx.currentTime+time);
+      }catch{}
+    }
+    function vibrate(ms=28){ if(navigator.vibrate) navigator.vibrate(ms); }
+
+    function setMsg(t,cls=''){ liveMsg.textContent=t; liveMsg.className='msg '+cls; }
+    function setCounters(){
+      const {emoji,labelPlur} = state.currentItem;
+      totalLabel.textContent = `Totale: ${state.total} ${labelPlur}`;
+      itemLabel.textContent = `Oggetto: ${emoji} ${labelPlur}`;
+      const consegnati = state.total - state.remaining;
+      progressLabel.textContent = `Consegnati: ${consegnati}`;
+    }
+
+    // Controlli base
+    const destChips=[...document.querySelectorAll('[data-dest]')];
+    destChips.forEach(ch=>ch.addEventListener('click',()=>{
+      destChips.forEach(c=>c.setAttribute('aria-pressed','false'));
+      ch.setAttribute('aria-pressed','true');
+      state.dest=parseInt(ch.dataset.dest,10);
+      boxesEl.style.setProperty('--cols',state.dest);
+      renderQtyChips();
+      beep(520,.06);
+    }));
+    function renderQtyChips(){
+      qtyRow.innerHTML='';
+      const opts = Array.from({length:20},(_,i)=>i+1).filter(n=>n%state.dest===0);
+      const shortlist = state.dest===2 ? [4,6,8,10,12,14,16,18,20] : [6,9,12,15,18];
+      const use = (opts.filter(n=>shortlist.includes(n))).length ? opts.filter(n=>shortlist.includes(n)) : opts;
+      use.forEach(n=>{
+        const b=document.createElement('button');
+        b.className='chip'; b.textContent=n; b.dataset.qty=n; b.setAttribute('aria-pressed', n===state.total ? 'true' : 'false');
+        b.onclick=()=>{[...qtyRow.children].forEach(c=>c.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); state.total=n; beep(480,.06); setCounters();};
+        qtyRow.appendChild(b);
+      });
+      // selezione di default sempre garantita
+      const def = qtyRow.querySelector('.chip[aria-pressed="true"]') || qtyRow.querySelector('.chip');
+      if (def) def.click();
+    }
+
+    // Costruzione UI
+    function buildTray(){
+      tray.innerHTML='';
+      // ricrea tanti oggetti quanti sono i "remaining"
+      for(let i=0;i<state.remaining;i++){
+        const el=document.createElement('div'); el.className='candy'; el.textContent=state.currentItem.emoji; el.id='c'+i;
+        el.onclick=()=>selectCandy(el.id);
+        tray.appendChild(el);
+      }
+    }
+
+    function buildBoxes(){
+      boxesEl.innerHTML=''; state.counts=Array(state.dest).fill(0);
+      for(let i=0;i<state.dest;i++){
+        const wrap=document.createElement('div'); wrap.className='box'; wrap.dataset.index=i;
+        const name=document.createElement('h3'); name.className='name'; name.contentEditable='true'; name.textContent='Bambino '+(i+1);
+        name.setAttribute('role','textbox'); name.setAttribute('aria-label','Nome del destinatario');
+        name.addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ e.preventDefault(); name.blur(); }});
+        // Assegna toccando QUALSIASI PUNTO del box
+        wrap.addEventListener('click', (e)=>{ tryAssign(i); });
+        const dz=document.createElement('div'); dz.className='dropzone'; dz.id='dz'+i;
+        wrap.appendChild(name); wrap.appendChild(dz); boxesEl.appendChild(wrap);
+      }
+      highlightValidBoxes();
+    }
+
+    function selectCandy(id){
+      // deseleziona eventuale precedente
+      if(state.selectedId){ const prev=document.getElementById(state.selectedId); if(prev) prev.classList.remove('selected'); }
+      state.selectedId=id; const el=document.getElementById(id); if(el){ el.classList.add('selected'); beep(700,.05); }
+      setMsg('Ora tocca un box per consegnare.');
+    }
+
+    function minCount(){ return Math.min(...state.counts); }
+    function canGive(i){ return state.counts[i] <= minCount(); }
+
+    function tryAssign(i){
+      if(!state.selectedId){ setMsg('Prima seleziona un oggetto nella pila.','error'); beep(300,.08); vibrate(60); return; }
+      if(state.remaining<=0){ return; }
+      if(!canGive(i)){ setMsg('Aspetta! Prima diamo a tutti.','error'); beep(260,.10); vibrate(60); return; }
+      const candy=document.getElementById(state.selectedId); if(!candy) return;
+      animateCandyTo(candy, document.getElementById('dz'+i));
+      state.counts[i]++; state.remaining--; setCounters();
+      state.selectedId=null;
+      setMsg('Bene! Uno per ciascuno.','ok'); beep(780,.06); vibrate(20);
+      highlightValidBoxes();
+      if(state.remaining===0){ onDistributionComplete(); }
+    }
+
+    function highlightValidBoxes(){
+      document.querySelectorAll('.box').forEach((el,idx)=>{
+        el.classList.toggle('valid', canGive(idx));
+      });
+    }
+
+    // Animazione FLIP semplificata: crea un clone che vola dal punto A (candy) al punto B (box)
+    function animateCandyTo(candyEl, targetDrop){
+      const start=candyEl.getBoundingClientRect();
+      const clone=candyEl.cloneNode(true); clone.classList.add('flying');
+      clone.style.left=start.left+'px'; clone.style.top=start.top+'px'; clone.style.width=start.width+'px'; clone.style.height=start.height+'px';
+      clone.style.transform='translate(0px,0px)'; clone.style.opacity='1';
+      document.body.appendChild(clone);
+
+      // rimuovi quella originale dal vassoio
+      candyEl.remove();
+
+      const end=targetDrop.getBoundingClientRect();
+      const dx=(end.left+8) - start.left; // +8 padding
+      const dy=(end.top+8) - start.top;
+      requestAnimationFrame(()=>{
+        clone.style.transform=`translate(${dx}px, ${dy}px)`; clone.style.opacity='0.9';
+      });
+      clone.addEventListener('transitionend',()=>{
+        // inserisci nel DOM reale del box
+        const placed=document.createElement('div'); placed.className='candy'; placed.textContent=state.currentItem.emoji;
+        targetDrop.appendChild(placed);
+        clone.remove();
+      },{once:true});
+    }
+
+    function onDistributionComplete(){
+      setMsg('Fatto! Conta gli oggetti in un box e scrivi il numero.','ok');
+      mathBar.hidden=false; fracTop.textContent=state.total; fracBottom.textContent=state.dest; answer.value=''; answer.focus();
+    }
+
+    // Avvio / Reset
+    document.getElementById('start').onclick=()=>{
+      // ruota l'oggetto a ogni esercizio
+      itemIndex = (itemIndex + 1) % ITEMS.length;
+      state.currentItem = ITEMS[itemIndex];
+      state.remaining=state.total; state.selectedId=null; setCounters();
+      setMsg('Seleziona un oggetto, poi tocca un box.');
+      buildTray(); buildBoxes();
+      mathBar.hidden=true; resultMsg.textContent=''; document.getElementById('reset').disabled=false;
+      // Nascondi i controlli durante l'esercizio
+      controls.classList.add('hidden');
+    };
+    document.getElementById('reset').onclick=()=>{
+      state.remaining=state.total; state.selectedId=null; setCounters(); buildTray(); buildBoxes(); mathBar.hidden=true; resultMsg.textContent=''; setMsg('Nuovo tentativo.');
+      // Mantieni i controlli nascosti finché non si conclude l'esercizio
+    };
+
+    // Verifica
+    document.getElementById('check').onclick=()=>{
+      const allEqual = state.counts.every(c=>c===state.counts[0]);
+      const expected = state.total/state.dest; 
+      const val = parseInt(answer.value,10);
+      if(!Number.isFinite(val)){ setMsg('Inserisci un numero.','error'); beep(260,.10); vibrate(60); return; }
+      if(!allEqual){ setMsg('Controlla: tutti devono avere lo stesso numero.','error'); beep(260,.10); vibrate(60); return; }
+      const noun = expected===1 ? state.currentItem.labelSing : state.currentItem.labelPlur;
+      if(val===expected){
+        resultMsg.textContent = `Tutti hanno avuto ${val} ${noun}! Ottimo lavoro!`;
+        resultMsg.className = 'msg ok';
+        beep(880,.08); vibrate(28); setMsg('Perfetto!','ok');
+        // Mostra di nuovo i controlli al termine dell'esercizio
+        controls.classList.remove('hidden');
+        window.scrollTo({top:0, behavior:'smooth'});
+      } else {
+        setMsg('Quasi! Riconta gli oggetti in un box.','error');
+        beep(260,.10); vibrate(60);
+      }
+    };
+
+    // Stato iniziale
+    function init(){
+      controls.classList.remove('hidden');
+      setCounters();
+      setMsg('Scegli quantità e destinatari, poi “Avvia esercizio”.');
+      buildBoxes();
+      renderQtyChips();
+      buildTray();
+    }
+    init();
+  </script>
+</body>
+</html>
