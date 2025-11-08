@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piastrelle numeriche – rotazione 0/90/180/270 + snap per-cella</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --ink:#1f2330; --muted:#e7e8ee; --panel:#ffffff; --grid:#d8dbe6;
+    --ok:#2e7d32; --danger:#b00020; --stroke:#283042;
+    --c1:#5a9bd5; --c2:#70ad47; --c3:#ed7d31; --c4:#a64d79; --c5:#ffd966;
+    --c6:#4472c4; --c7:#c00000; --c8:#00b0f0; --c9:#92d050; --c10:#7030a0;
+    --tileSize:48px;
+  }
+  html,body{height:100%}
+  body{margin:0; font:16px/1.25 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink); background:var(--bg)}
+  header{padding:12px 16px; background:linear-gradient(180deg,#fdfdff,#f4f6fb); border-bottom:1px solid var(--muted)}
+  header h1{font-size:1.1rem; margin:0 0 4px}
+  header p{margin:0; color:#565a66}
+
+  .wrap{display:grid; grid-template-columns:300px 1fr 320px; gap:12px; padding:12px; height:calc(100vh - 72px)}
+  .panel{background:var(--panel); border:1px solid var(--muted); border-radius:12px; padding:12px; box-shadow:0 1px 2px rgba(0,0,0,.03)}
+
+  /* Badge diagnostico JS */
+  #jsBadge{position:fixed; left:10px; top:10px; z-index:9999; padding:6px 10px; border-radius:999px; font-weight:700; border:1px solid #e0e0e0}
+  #jsBadge.off{background:#fff4f4; color:#7a0010; border-color:#f2c9c9}
+  #jsBadge.on{background:#f4fbf4; color:#174d18; border-color:#cfe6cf}
+
+  /* Strumenti */
+  #tools .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:10px}
+  #tools input[type="number"]{width:90px; padding:6px 8px; border:1px solid var(--muted); border-radius:8px}
+  #tools button{padding:8px 10px; border-radius:10px; border:1px solid var(--muted); background:#fafbff; cursor:pointer}
+  #tools .danger{border-color:#f1c0c4; background:#fff5f6; color:#7a0010}
+  #tools .ok{border-color:#cfe6cf; background:#f4fbf4; color:#174d18}
+  .seg{display:inline-flex; border:1px solid var(--muted); border-radius:10px; overflow:hidden}
+  .seg label{padding:6px 10px; cursor:pointer; background:#fff; border-right:1px solid var(--muted)}
+  .seg label:last-child{border-right:none}
+  .seg input{display:none}
+  .seg input:checked + span{background:#eaf1ff}
+
+  /* Palette */
+  #palette{display:grid; grid-template-columns:repeat(2,1fr); gap:10px}
+  .pItem{background:#fff; border:1px dashed var(--muted); border-radius:12px; padding:8px; display:flex; flex-direction:column; align-items:center; gap:6px}
+  .numPreview{display:flex; align-items:center; justify-content:center; width:120px; height:56px; border-radius:10px; border:1px solid var(--muted); font-weight:800; font-size:1.2rem; color:#111}
+  .act{padding:6px 10px; border-radius:8px; border:1px solid var(--muted); background:#fff; cursor:pointer}
+
+  /* Tavolo a griglia */
+  #workspace{
+    position:relative; overflow:auto; height:100%;
+    background:
+      linear-gradient(90deg,transparent calc(var(--tileSize) - 1px), var(--grid) 1px),
+      linear-gradient(transparent calc(var(--tileSize) - 1px), var(--grid) 1px);
+    background-size: var(--tileSize) var(--tileSize);
+    border:1px solid var(--muted); border-radius:12px;
+  }
+
+  /* Oggetti sul tavolo */
+  .item{position:absolute; cursor:grab; touch-action:none}
+  .badge{position:absolute; top:-10px; right:-10px; font-size:.8rem; background:#fff; border:1px solid var(--muted); padding:2px 6px; border-radius:999px}
+  .rotBtn{
+    position:absolute; left:-12px; top:-12px; width:24px; height:24px; border-radius:50%;
+    background:#fff; border:1px solid var(--muted); display:flex; align-items:center; justify-content:center;
+    font-size:.85rem; cursor:pointer; user-select:none;
+  }
+  .labelNum{position:absolute; bottom:-18px; left:50%; transform:translateX(-50%); background:#fff; border:1px solid var(--muted); padding:2px 6px; border-radius:8px; font-size:.8rem}
+
+  /* Piastra per-cella */
+  .cellWrap{position:relative}
+  .cellBlock{
+    position:absolute; width:var(--tileSize); height:var(--tileSize);
+    box-sizing:border-box; border-radius:10px; border:2px solid var(--stroke);
+  }
+  .cellBlock .hole{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:36%; height:36%; border-radius:50%; background:#fff; opacity:.9;
+  }
+
+  /* Cartellino numerico */
+  .numchip{width:calc(var(--tileSize)*1.6); height:calc(var(--tileSize)*1.2); border-radius:12px; border:1px solid var(--muted); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.2rem; color:#111}
+
+  /* Sagoma 2×R */
+  .mold{position:absolute; pointer-events:auto; border:2px dashed #7082a3; border-radius:12px; background:rgba(42,123,246,0.06)}
+  .mold.filled{border-color: var(--ok); box-shadow:0 0 0 3px rgba(46,125,50,.12)}
+  .slot{position:absolute; width:var(--tileSize); height:var(--tileSize)}
+  .slot::after{
+    content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:36%; height:36%; border-radius:50%; border:2px dashed #97a7c9; opacity:.7;
+  }
+
+  @media print{
+    header, #tools{display:none}
+    .wrap{grid-template-columns:1fr 1fr; gap:8px; height:auto}
+    #workspace{height:800px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Piastrelle numeriche – rotazione 0/90/180/270</h1>
+  <p>↻ o tasto <kbd>R</kbd> per ruotare. Snap nella sagoma (2 colonne) solo se tutte le celle sono libere; i numeri singoli si agganciano come 1×1.</p>
+</header>
+
+<div id="jsBadge" class="off" aria-live="polite">JS: disattivo</div>
+
+<div class="wrap">
+  <!-- Strumenti -->
+  <section id="tools" class="panel">
+    <div class="row">
+      <span style="font-weight:600">Aggiungi come:</span>
+      <div class="seg" role="radiogroup">
+        <label><input type="radio" name="mode" value="plate" checked><span>Piastre</span></label>
+        <label><input type="radio" name="mode" value="number"><span>Solo numeri</span></label>
+      </div>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" id="toggleLabels" checked> Etichette piastre</label>
+      <label><input type="checkbox" id="toggleMold" checked> Sagoma</label>
+      <label><input type="checkbox" id="toggleMagnet" checked> Magnetizza nella sagoma</label>
+    </div>
+    <div class="row">
+      <span>Passo</span>
+      <input type="range" id="cellSize" min="36" max="64" step="2" value="48">
+      <span id="cellSizeVal">48</span> px
+      <label for="target" style="margin-left:8px">Obiettivo</label>
+      <input id="target" type="number" min="1" max="30" step="1" value="10">
+      <button id="clear" class="danger">Cancella</button>
+      <button id="print" class="ok">Stampa</button>
+    </div>
+
+    <hr style="margin:10px 0">
+
+    <!-- Palette -->
+    <div id="palette">
+      <div class="pItem"><div class="numPreview" style="background:var(--c1)">1</div><button class="act" data-n="1">Aggiungi 1</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c2)">2</div><button class="act" data-n="2">Aggiungi 2</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c3)">3</div><button class="act" data-n="3">Aggiungi 3</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c4)">4</div><button class="act" data-n="4">Aggiungi 4</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c5)">5</div><button class="act" data-n="5">Aggiungi 5</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c6)">6</div><button class="act" data-n="6">Aggiungi 6</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c7)">7</div><button class="act" data-n="7">Aggiungi 7</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c8)">8</div><button class="act" data-n="8">Aggiungi 8</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c9)">9</div><button class="act" data-n="9">Aggiungi 9</button></div>
+      <div class="pItem"><div class="numPreview" style="background:var(--c10)">10</div><button class="act" data-n="10">Aggiungi 10</button></div>
+    </div>
+  </section>
+
+  <!-- Tavolo -->
+  <main id="workspace" class="panel" aria-label="Tavolo di lavoro"></main>
+
+  <!-- Sintesi -->
+  <aside id="summary" class="panel" aria-live="polite">
+    <div>Somma: <strong id="sumVal">0</strong></div>
+    <div id="equation">—</div>
+    <div style="margin-top:10px">Obiettivo: <span id="goalVal">10</span> → <span id="goalState">non raggiunto</span></div>
+    <div id="moldState" style="margin-top:6px">Sagoma: non riempita</div>
+  </aside>
+</div>
+
+<script defer>
+(function(){
+  /* Diagnostica */
+  var jsBadge=document.getElementById('jsBadge');
+  jsBadge.textContent='JS: attivo'; jsBadge.classList.remove('off'); jsBadge.classList.add('on');
+
+  /* Stato */
+  var COLORS={1:'var(--c1)',2:'var(--c2)',3:'var(--c3)',4:'var(--c4)',5:'var(--c5)',6:'var(--c6)',7:'var(--c7)',8:'var(--c8)',9:'var(--c9)',10:'var(--c10)'};
+  var workspace=document.getElementById('workspace');
+  var palette=document.getElementById('palette');
+  var sumVal=document.getElementById('sumVal');
+  var equation=document.getElementById('equation');
+  var goalVal=document.getElementById('goalVal');
+  var goalState=document.getElementById('goalState');
+  var moldState=document.getElementById('moldState');
+  var cellSizeInput=document.getElementById('cellSize');
+  var cellSizeVal=document.getElementById('cellSizeVal');
+  var targetInput=document.getElementById('target');
+
+  var cellSize=48, showLabels=true, addMode='plate', magnetOn=true, idCounter=1, moldEl=null;
+
+  function setCSSVar(n,v){ document.documentElement.style.setProperty(n,v); }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max,v)); }
+
+  /* Base: occupazione 2×rows con eventuale cella dispari in basso a sinistra (0°).
+     Rotazioni 90/180/270 calcolate su bounding dinamico. */
+  function rowsFor(n){ return Math.ceil(n/2); }
+  function baseCells(n){ var a=[]; for(var i=0;i<n;i++){ a.push({x:i%2, y:Math.floor(i/2)}); } return a; }
+
+  function rotateCells(cells, rows, rot){
+    var W=2, H=rows;
+    function rot90(p){ return {x:p.y, y:(W-1)-p.x}; }
+    function rot180(p){ return {x:(W-1)-p.x, y:(H-1)-p.y}; }
+    function rot270(p){ return {x:(H-1)-p.y, y:p.x}; }
+
+    var out=cells.map(p=>({x:p.x,y:p.y}));
+    if(rot===90){ out=out.map(rot90); var t=W; W=H; H=t; }
+    else if(rot===180){ out=out.map(rot180); }
+    else if(rot===270){ out=out.map(rot270); var t2=W; W=H; H=t2; }
+
+    // normalizza a min=0
+    var minX=Math.min.apply(null,out.map(p=>p.x)), minY=Math.min.apply(null,out.map(p=>p.y));
+    out=out.map(p=>({x:p.x-minX, y:p.y-minY}));
+    var maxX=Math.max.apply(null,out.map(p=>p.x)), maxY=Math.max.apply(null,out.map(p=>p.y));
+    return {cells:out, w:maxX+1, h:maxY+1};
+  }
+
+  function geomFor(n, rot){ return rotateCells(baseCells(n), rowsFor(n), rot); }
+  function getRot(el){ return parseInt(el.dataset.rot||'0',10); }
+
+  function setGridPos(el,gx,gy){
+    el.dataset.gx=String(gx); el.dataset.gy=String(gy);
+    var w=parseInt(el.dataset.wcells||'2',10), h=parseInt(el.dataset.hcells||'1',10);
+    el.style.left=(gx*cellSize)+'px'; el.style.top=(gy*cellSize)+'px';
+    el.style.width=(w*cellSize)+'px'; el.style.height=(h*cellSize)+'px';
+  }
+  function getGridPos(el){ return {gx:parseInt(el.dataset.gx||'0',10), gy:parseInt(el.dataset.gy||'0',10)}; }
+
+  /* Sagoma 2×R */
+  function moldRows(){ return Math.ceil((parseInt(targetInput.value||'0',10) || 0)/2); }
+  function ensureMold(){ if(moldEl) return moldEl; moldEl=document.createElement('div'); moldEl.className='mold'; moldEl.dataset.gx='2'; moldEl.dataset.gy='2'; workspace.appendChild(moldEl); drawMold(); return moldEl; }
+  function drawMold(){
+    var gx=parseInt(moldEl.dataset.gx,10), gy=parseInt(moldEl.dataset.gy,10), rows=moldRows();
+    moldEl.style.left=(gx*cellSize)+'px'; moldEl.style.top=(gy*cellSize)+'px';
+    moldEl.style.width=(2*cellSize)+'px';  moldEl.style.height=(rows*cellSize)+'px';
+    var target=parseInt(targetInput.value||'0',10) || 0;
+    moldEl.querySelectorAll('.slot').forEach(s=>s.remove());
+    for(var i=0;i<target;i++){
+      var r=Math.floor(i/2), c=i%2;
+      var slot=document.createElement('div'); slot.className='slot';
+      slot.style.left=(c*cellSize)+'px'; slot.style.top=(r*cellSize)+'px';
+      moldEl.appendChild(slot);
+    }
+  }
+
+  /* Piastra: rendering secondo rotazione */
+  function renderPlate(el){
+    var n=parseInt(el.dataset.value,10), rot=getRot(el), g=geomFor(n,rot);
+    el.dataset.wcells=String(g.w); el.dataset.hcells=String(g.h);
+    var wrap=el.querySelector('.cellWrap'); wrap.innerHTML='';
+    wrap.style.width=(g.w*cellSize)+'px'; wrap.style.height=(g.h*cellSize)+'px';
+    g.cells.forEach(function(pos){
+      var b=document.createElement('div'); b.className='cellBlock';
+      b.style.left=(pos.x*cellSize)+'px'; b.style.top=(pos.y*cellSize)+'px';
+      b.style.background=COLORS[n];
+      var hole=document.createElement('div'); hole.className='hole'; b.appendChild(hole);
+      wrap.appendChild(b);
+    });
+  }
+
+  function createPlate(n){
+    var el=document.createElement('div'); el.className='item plate'; el.tabIndex=0;
+    el.dataset.value=String(n); el.dataset.rot='0'; el.dataset.id='it_'+(idCounter++);
+    var wrap=document.createElement('div'); wrap.className='cellWrap';
+    var badge=document.createElement('div'); badge.className='badge'; badge.textContent='×'; badge.title='Rimuovi';
+    badge.onclick=function(e){ e.stopPropagation(); el.remove(); refreshSummary(); };
+    var rot=document.createElement('div'); rot.className='rotBtn'; rot.title='Ruota (R)'; rot.textContent='↻';
+    rot.onclick=function(e){ e.stopPropagation(); rotate(el,90); };
+    var lbl=document.createElement('div'); lbl.className='labelNum'; lbl.textContent=n; lbl.style.display=showLabels?'block':'none';
+    el.appendChild(badge); el.appendChild(rot); el.appendChild(lbl); el.appendChild(wrap);
+    renderPlate(el);
+    el.addEventListener('keydown', function(e){ if(e.key==='r'||e.key==='R'){ rotate(el,90); e.preventDefault(); } });
+    return el;
+  }
+
+  function rotate(el, delta){
+    var r=(getRot(el)+delta)%360; el.dataset.rot=String(r);
+    renderPlate(el);
+    var gp=getGridPos(el); setGridPos(el,gp.gx,gp.gy);
+    if(magnetOn) magnetSnapInsideMold(el);
+    refreshSummary();
+  }
+
+  /* Aggiunta */
+  var spawnStep=0; function nextSpawn(){ spawnStep=(spawnStep+1)%6; return {gx:1+spawnStep, gy:1}; }
+  function addPlate(n,gx,gy){ var el=createPlate(n); workspace.appendChild(el); setGridPos(el,gx,gy); enableMove(el); refreshSummary(); }
+  function addNumber(n,gx,gy){
+    var el=document.createElement('div'); el.className='item numchip'; el.tabIndex=0; el.dataset.value=String(n); el.dataset.id='it_'+(idCounter++);
+    el.style.background=COLORS[n]; el.textContent=n;
+    var badge=document.createElement('div'); badge.className='badge'; badge.textContent='×'; badge.title='Rimuovi';
+    badge.onclick=function(e){ e.stopPropagation(); el.remove(); refreshSummary(); };
+    el.appendChild(badge); workspace.appendChild(el);
+    el.style.left=(gx*cellSize)+'px'; el.style.top=(gy*cellSize)+'px'; enableMove(el); refreshSummary();
+  }
+
+  /* Occupazione */
+  function plateCellsAbs(el){
+    var n=parseInt(el.dataset.value,10), rot=getRot(el), gp=getGridPos(el), g=geomFor(n,rot);
+    return g.cells.map(function(p){ return {x:gp.gx+p.x, y:gp.gy+p.y}; });
+  }
+  function buildMoldOcc(excludeId){
+    if(!moldEl || moldEl.style.display==='none') return null;
+    var mgx=parseInt(moldEl.dataset.gx||'0',10), mgy=parseInt(moldEl.dataset.gy||'0',10), mRows=moldRows();
+    var occ=[new Array(mRows).fill(false), new Array(mRows).fill(false)];
+    workspace.querySelectorAll('.plate').forEach(function(p){
+      if(p.dataset.id===excludeId) return;
+      plateCellsAbs(p).forEach(function(q){
+        var rx=q.x-mgx, ry=q.y-mgy;
+        if(rx>=0 && rx<2 && ry>=0 && ry<mRows) occ[rx][ry]=true;
+      });
+    });
+    return {occ:occ, mgx:mgx, mgy:mgy, mRows:mRows};
+  }
+  function canPlace(n, rot, relGY, offsetX, info){
+    var g=geomFor(n,rot); if(g.w>2) return false;
+    var maxTop=info.mRows - g.h; if(relGY<0 || relGY>maxTop) return false;
+    for(var i=0;i<g.cells.length;i++){
+      var cx=offsetX + g.cells[i].x, cy=relGY + g.cells[i].y;
+      if(cx<0 || cx>=2) return false;
+      if(info.occ[cx][cy]) return false;
+    }
+    return true;
+  }
+  function choosePlacement(n, rot, desiredRelGY, info){
+    var g=geomFor(n,rot); if(g.w>2) return null;
+    var candidates=[0, 1-(g.w-1)]; candidates=[...new Set(candidates)].filter(o=>o===0||o===1);
+    var maxTop=info.mRows - g.h, best=null, bestDist=1e9;
+    for(var c=0;c<candidates.length;c++){
+      for(var d=0; d<=info.mRows; d++){
+        var down=clamp(desiredRelGY-d,0,maxTop);
+        if(canPlace(n,rot,down,candidates[c],info)){
+          var dist=Math.abs(down-desiredRelGY); if(dist<bestDist){ bestDist=dist; best={relGY:down, offsetX:candidates[c]}; }
+          break;
+        }
+        var up=clamp(desiredRelGY+d,0,maxTop);
+        if(canPlace(n,rot,up,candidates[c],info)){
+          var dist2=Math.abs(up-desiredRelGY); if(dist2<bestDist){ bestDist=dist2; best={relGY:up, offsetX:candidates[c]}; }
+          break;
+        }
+        if(down===0 && up===maxTop) break;
+      }
+    }
+    return best;
+  }
+
+  function magnetSnapInsideMold(el){
+    if(!moldEl || moldEl.style.display==='none') return;
+    var info=buildMoldOcc(el.dataset.id); if(!info) return;
+    var n=parseInt(el.dataset.value,10), rot=getRot(el), gp=getGridPos(el), desiredRel=Math.round(gp.gy - info.mgy);
+
+    // cartellini numerici: come 1×1
+    if(el.classList.contains('numchip')){
+      var best=null, bestDist=1e9;
+      [0,1].forEach(function(off){
+        for(var d=0; d<=info.mRows; d++){
+          var down=clamp(desiredRel-d,0,info.mRows-1);
+          if(!info.occ[off][down]){ var dist=Math.abs(down-desiredRel); if(dist<bestDist){bestDist=dist; best={relGY:down, offsetX:off};} break; }
+          var up=clamp(desiredRel+d,0,info.mRows-1);
+          if(!info.occ[off][up]){ var dist2=Math.abs(up-desiredRel); if(dist2<bestDist){bestDist=dist2; best={relGY:up, offsetX:off};} break; }
+        }
+      });
+      if(best) setGridPos(el, info.mgx+best.offsetX, info.mgy+best.relGY);
+      return;
+    }
+
+    // piastre: usa la rotazione attuale; se non c'è spazio prova anche le altre tre rotazioni
+    var order=[rot, (rot+90)%360, (rot+180)%360, (rot+270)%360];
+    for(var i=0;i<order.length;i++){
+      var tryRot=order[i];
+      var choice=choosePlacement(n, tryRot, desiredRel, info);
+      if(choice){
+        if(tryRot!==rot){ el.dataset.rot=String(tryRot); renderPlate(el); }
+        setGridPos(el, info.mgx + choice.offsetX, info.mgy + choice.relGY);
+        break;
+      }
+    }
+  }
+
+  /* Drag */
+  function enableMove(el){
+    var startX=0,startY=0,baseGX=0,baseGY=0,drag=false;
+    function pt(ev){ return ev.touches && ev.touches[0] ? {x:ev.touches[0].clientX,y:ev.touches[0].clientY} : {x:ev.clientX,y:ev.clientY}; }
+    function down(ev){
+      ev.preventDefault(); el.classList.add('dragging');
+      var p=pt(ev); startX=p.x; startY=p.y;
+      var gp=getGridPos(el); baseGX=gp.gx; baseGY=gp.gy; drag=true;
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up, {once:true});
+    }
+    function move(ev){
+      if(!drag) return; var p=pt(ev); var dx=p.x-startX, dy=p.y-startY;
+      setGridPos(el, baseGX + Math.round(dx/cellSize), baseGY + Math.round(dy/cellSize));
+    }
+    function up(){
+      drag=false; el.classList.remove('dragging');
+      if(magnetOn) magnetSnapInsideMold(el);
+      refreshSummary();
+      window.removeEventListener('pointermove', move);
+    }
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('keydown', function(e){
+      var gp=getGridPos(el), gx=gp.gx, gy=gp.gy;
+      if(e.key==='ArrowLeft'){gx-=1; e.preventDefault();}
+      if(e.key==='ArrowRight'){gx+=1; e.preventDefault();}
+      if(e.key==='ArrowUp'){gy-=1; e.preventDefault();}
+      if(e.key==='ArrowDown'){gy+=1; e.preventDefault();}
+      if(e.key==='r' || e.key==='R'){ rotate(el,90); e.preventDefault(); }
+      if(e.key==='Delete'){ el.remove(); refreshSummary(); return; }
+      setGridPos(el,gx,gy);
+    });
+  }
+
+  /* Sintesi */
+  function getItems(){ return Array.from(workspace.querySelectorAll('.item')); }
+  function sumInsideMold(){
+    if(!moldEl || moldEl.style.display==='none') return 0;
+    var mgx=parseInt(moldEl.dataset.gx||'0',10), mgy=parseInt(moldEl.dataset.gy||'0',10), mRows=moldRows();
+    var s=0;
+    workspace.querySelectorAll('.plate').forEach(function(p){
+      var cells=plateCellsAbs(p);
+      var allInside=cells.every(function(q){ return (q.x>=mgx && q.x<mgx+2 && q.y>=mgy && q.y<mgy+mRows); });
+      if(allInside) s+=parseInt(p.dataset.value,10);
+    });
+    return s;
+  }
+  function refreshSummary(){
+    var vals=getItems().map(function(el){ return parseInt(el.dataset.value||'0',10); });
+    var s=vals.reduce(function(a,b){return a+b;},0);
+    sumVal.textContent=s;
+    equation.textContent = vals.length ? (vals.join(' + ') + ' = ' + s) : '—';
+    var tgt = clamp(parseInt(targetInput.value||'0',10),1,30);
+    goalVal.textContent=tgt; goalState.textContent = (tgt>0 && s===tgt)?'raggiunto':'non raggiunto';
+    var inside=sumInsideMold();
+    moldState.textContent = 'Sagoma: ' + (inside===tgt ? 'riempita' : 'non riempita') + ' ('+inside+'/'+tgt+')';
+  }
+
+  /* Impostazioni */
+  document.querySelectorAll('input[name="mode"]').forEach(function(r){ r.addEventListener('change', function(e){ addMode=e.target.value; }); });
+  document.getElementById('toggleLabels').addEventListener('change', function(e){
+    showLabels=e.target.checked; workspace.querySelectorAll('.plate .labelNum').forEach(function(lbl){ lbl.style.display=showLabels?'block':'none'; });
+  });
+  document.getElementById('toggleMold').addEventListener('change', function(e){
+    if(e.target.checked){ ensureMold(); moldEl.style.display='block'; drawMold(); }
+    else if(moldEl){ moldEl.style.display='none'; }
+    refreshSummary();
+  });
+  document.getElementById('toggleMagnet').addEventListener('change', function(e){ magnetOn=e.target.checked; });
+
+  cellSizeInput.addEventListener('input', function(){
+    cellSize=parseInt(cellSizeInput.value,10); cellSizeVal.textContent=cellSize; setCSSVar('--tileSize', cellSize+'px');
+    if(moldEl) drawMold();
+    // ricrea piastre preservando gx,gy,rot
+    var plats=Array.from(workspace.querySelectorAll('.plate'));
+    var snap=plats.map(function(p){ return { n:parseInt(p.dataset.value,10), gx:parseInt(p.dataset.gx||'0',10), gy:parseInt(p.dataset.gy||'0',10), rot:getRot(p) }; });
+    plats.forEach(function(p){ p.remove(); });
+    snap.forEach(function(s){ var el=createPlate(s.n); workspace.appendChild(el); el.dataset.rot=String(s.rot); renderPlate(el); setGridPos(el,s.gx,s.gy); enableMove(el); });
+    refreshSummary();
+  });
+  targetInput.addEventListener('input', function(){ if(moldEl){ drawMold(); refreshSummary(); }});
+  document.getElementById('clear').addEventListener('click', function(){ Array.from(workspace.querySelectorAll('.item')).forEach(function(el){el.remove();}); refreshSummary(); });
+  document.getElementById('print').addEventListener('click', function(){ window.print(); });
+
+  palette.addEventListener('click', function(e){
+    var btn=e.target.closest('.act'); if(!btn) return;
+    var n=parseInt(btn.getAttribute('data-n'),10);
+    var spawn=nextSpawn();
+    if(addMode==='plate') addPlate(n, spawn.gx, spawn.gy);
+    else addNumber(n, spawn.gx, spawn.gy);
+  });
+
+  /* Avvio */
+  ensureMold(); drawMold(); refreshSummary();
+})();
+</script>
+</body>
+</html>
