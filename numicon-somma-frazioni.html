@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Piastrelle numeriche – somma delle frazioni (fix aggiornamento)</title>
+<title>Piastrelle numeriche – somma delle frazioni (stampa solo tavolo + frazione empilata)</title>
 <style>
   :root{
     --bg:#f6f7fb; --ink:#1f2330; --muted:#e7e8ee; --panel:#ffffff; --grid:#d8dbe6;
@@ -76,39 +76,40 @@
     content:""; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
     width:36%; height:36%; border-radius:50%; border:2px dashed #97a7c9; opacity:.7;
   }
-  .moldFooter{
-    position:absolute; left:0; top:100%; margin-top:4px;
-    font-weight:800; background:#fff; border:1px solid var(--muted); border-radius:10px; padding:2px 8px
-  }
 
-  /* --- STAMPA SOLO TAVOLO --- */
+  /* Frazione impilata (numeratore / denominatore con linea) */
+  .moldFooter{ position:absolute; left:0; top:100%; margin-top:4px; background:#fff; }
+  .frac{ display:flex; flex-direction:column; align-items:center; font-weight:800; line-height:1; }
+  .frac .num{ font-size:1rem; }
+  .frac .line{ width:100%; height:2px; background:#1f2330; margin:2px 0; }
+  .frac .den{ font-size:1rem; }
+
+  /* --- STAMPA SOLO TAVOLO: stampa esclusiva dell'area workspace --- */
   @media print{
     @page{ margin:10mm; }
-    /* nasconde tutto tranne il tavolo */
-    body.print-only-workspace header,
-    body.print-only-workspace #tools,
-    body.print-only-workspace #summary{ display:none !important; }
-
-    body.print-only-workspace .wrap{
-      grid-template-columns:1fr !important;
-      padding:0 !important; gap:0 !important; height:auto !important;
-    }
-    body.print-only-workspace #workspace{
+    /* nasconde tutto per default */
+    body * { visibility: hidden !important; }
+    /* rende visibile solo il tavolo e i suoi figli */
+    #workspace, #workspace * { visibility: visible !important; }
+    /* posiziona il tavolo in alto a sinistra e rimuove bordi */
+    #workspace{
+      position:absolute !important; left:0 !important; top:0 !important;
       border:none !important; border-radius:0 !important;
-      overflow:visible !important; height:auto !important; page-break-inside:avoid;
+      overflow:visible !important; height:auto !important; width:auto !important;
+      page-break-inside:avoid;
+      background:
+        linear-gradient(90deg,transparent calc(var(--tileSize) - 1px), var(--grid) 1px),
+        linear-gradient(transparent calc(var(--tileSize) - 1px), var(--grid) 1px) !important;
     }
     /* elementi non utili in stampa */
-    body.print-only-workspace .badge,
-    body.print-only-workspace .rotBtn,
-    body.print-only-workspace .labelNum,
-    body.print-only-workspace .moldFooter{ display:none !important; }
+    #workspace .badge, #workspace .rotBtn, #workspace .labelNum{ display:none !important; }
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>Piastrelle numeriche – somma delle frazioni (fix)</h1>
-  <p>Ogni sagoma mostra <strong>somma piastre interne / obiettivo</strong>. La colonna di destra mostra la <strong>somma delle frazioni</strong> su tutte le sagome.</p>
+  <h1>Piastrelle numeriche – somma delle frazioni (stampa solo tavolo)</h1>
+  <p>Stampa solo l’area del tavolo. Le frazioni sono in formato impilato.</p>
 </header>
 
 <div class="wrap">
@@ -261,10 +262,8 @@
       moldEl.dataset.gx=String(gx); moldEl.dataset.gy=String(gy); moldEl.dataset.rows=String(rows);
       workspace.appendChild(moldEl);
       drawMold(moldEl, T, rows);
-      var footer=document.createElement('div'); footer.className='moldFooter'; footer.textContent='0 / '+T;
+      var footer=document.createElement('div'); footer.className='moldFooter';
       workspace.appendChild(footer);
-      footer.style.left=(gx*cellSize)+'px';
-      footer.style.top=((gy+rows)*cellSize+4)+'px';
       molds.push({el:moldEl, gx:gx, gy:gy, rows:rows, footerEl:footer});
     }
     refreshSummary();
@@ -296,7 +295,6 @@
   }
 
   function buildMoldOcc(mold, excludeId){
-    // Accetta oggetto sagoma ({gx,gy,rows}) o elemento DOM con dataset.*
     var rows = mold.rows || parseInt(mold.dataset.rows,10);
     var gx   = mold.gx   || parseInt(mold.dataset.gx,10);
     var gy   = mold.gy   || parseInt(mold.dataset.gy,10);
@@ -344,7 +342,7 @@
             }
           }
           tryGY=clamp(desiredGY - info.gy + d, 0, maxTop);
-          for(var ci2=0; ci2<candidates.length; ci2++){
+          for(var ci2=0; ci<candidates.length; ci++){
             if(canPlaceInMold(n, rot, tryGY, candidates[ci2], info)){
               return {gx: info.gx + candidates[ci2], gy: info.gy + tryGY, rot: rot};
             }
@@ -391,7 +389,7 @@
       if(e.key==='ArrowRight'){gx+=1; setGridPos(el,gx,gy); e.preventDefault(); updateAfterMove(el); return;}
       if(e.key==='ArrowUp'){gy-=1; setGridPos(el,gx,gy); e.preventDefault(); updateAfterMove(el); return;}
       if(e.key==='ArrowDown'){gy+=1; setGridPos(el,gx,gy); e.preventDefault(); updateAfterMove(el); return;}
-      if(e.key==='r' || e.key==='R'){ rotate(el,90); e.preventDefault(); return; }
+      if(e.key==='r'||e.key==='R'){ rotate(el,90); e.preventDefault(); return; }
       if(e.key==='Delete'){ el.remove(); refreshSummary(); return; }
     });
   }
@@ -404,7 +402,6 @@
   function addPlate(n,gx,gy){ var el=createPlate(n); workspace.appendChild(el); setGridPos(el,gx,gy); enableMove(el); refreshSummary(); }
 
   function plateFullyInsideMold(moldAny, plateEl){
-    // Accetta elemento DOM della sagoma o oggetto sagoma
     var moldEl = moldAny.el ? moldAny.el : moldAny;
     var gx=parseInt(moldEl.dataset.gx,10), gy=parseInt(moldEl.dataset.gy,10), rows=parseInt(moldEl.dataset.rows,10);
     var gp=getGridPos(plateEl), g=geomAt(plateEl);
@@ -419,9 +416,10 @@
       var plates=Array.from(workspace.querySelectorAll('.plate'));
       plates.forEach(function(p){ if(plateFullyInsideMold(M.el, p)) sum += parseInt(p.dataset.value,10); });
       totalNumerator += sum;
-      M.footerEl.textContent = sum + ' / ' + T;
-      M.footerEl.style.left=(M.gx*cellSize)+'px';
-      M.footerEl.style.top=((M.gy+M.rows)*cellSize+4)+'px';
+      // posiziona il footer e scrive la frazione empilata
+      var x = M.gx*cellSize, y = (M.gy+M.rows)*cellSize + 4;
+      M.footerEl.style.position='absolute'; M.footerEl.style.left=x+'px'; M.footerEl.style.top=y+'px';
+      M.footerEl.innerHTML = '<div class="frac"><span class="num">'+sum+'</span><span class="line"></span><span class="den">'+T+'</span></div>';
     });
     fracSumEl.textContent = totalNumerator + " / " + T;
     var asDecimal = (totalNumerator / T).toFixed(2);
@@ -438,7 +436,6 @@
       M.rows=rows; M.el.dataset.rows=String(rows);
       drawMold(M.el, T, rows);
     });
-    // ricrea piastre preservando posizioni/rotazioni
     var plats=Array.from(workspace.querySelectorAll('.plate'));
     var snap=plats.map(function(p){ return { n:parseInt(p.dataset.value,10), gx:parseInt(p.dataset.gx||'0',10), gy:parseInt(p.dataset.gy||'0',10), rot:getRot(p) }; });
     plats.forEach(function(p){ p.remove(); });
@@ -460,17 +457,12 @@
     refreshSummary();
   });
 
-  /* ===== Stampa solo tavolo ===== */
+  // Stampa solo il tavolo (griglia + sagome + piastre)
   document.getElementById('print').addEventListener('click', function(){
-    try{
-      document.body.classList.add('print-only-workspace'); // attiva layout di stampa
-      window.print();
-    } finally {
-      document.body.classList.remove('print-only-workspace'); // ripristina UI
-    }
+    window.print();
   });
 
-  // Avvio
+  // Avvio con 3 sagome
   createSeries(3);
 })();
 </script>
