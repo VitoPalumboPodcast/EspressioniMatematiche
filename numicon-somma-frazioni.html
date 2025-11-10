@@ -80,6 +80,29 @@
     position:absolute; left:0; top:100%; margin-top:4px;
     font-weight:800; background:#fff; border:1px solid var(--muted); border-radius:10px; padding:2px 8px
   }
+
+  /* --- STAMPA SOLO TAVOLO --- */
+  @media print{
+    @page{ margin:10mm; }
+    /* nasconde tutto tranne il tavolo */
+    body.print-only-workspace header,
+    body.print-only-workspace #tools,
+    body.print-only-workspace #summary{ display:none !important; }
+
+    body.print-only-workspace .wrap{
+      grid-template-columns:1fr !important;
+      padding:0 !important; gap:0 !important; height:auto !important;
+    }
+    body.print-only-workspace #workspace{
+      border:none !important; border-radius:0 !important;
+      overflow:visible !important; height:auto !important; page-break-inside:avoid;
+    }
+    /* elementi non utili in stampa */
+    body.print-only-workspace .badge,
+    body.print-only-workspace .rotBtn,
+    body.print-only-workspace .labelNum,
+    body.print-only-workspace .moldFooter{ display:none !important; }
+  }
 </style>
 </head>
 <body>
@@ -273,7 +296,7 @@
   }
 
   function buildMoldOcc(mold, excludeId){
-    // Accept either a mold object ({gx,gy,rows}) or a DOM el with dataset.*
+    // Accetta oggetto sagoma ({gx,gy,rows}) o elemento DOM con dataset.*
     var rows = mold.rows || parseInt(mold.dataset.rows,10);
     var gx   = mold.gx   || parseInt(mold.dataset.gx,10);
     var gy   = mold.gy   || parseInt(mold.dataset.gy,10);
@@ -381,7 +404,7 @@
   function addPlate(n,gx,gy){ var el=createPlate(n); workspace.appendChild(el); setGridPos(el,gx,gy); enableMove(el); refreshSummary(); }
 
   function plateFullyInsideMold(moldAny, plateEl){
-    // Accept mold DOM element or mold object
+    // Accetta elemento DOM della sagoma o oggetto sagoma
     var moldEl = moldAny.el ? moldAny.el : moldAny;
     var gx=parseInt(moldEl.dataset.gx,10), gy=parseInt(moldEl.dataset.gy,10), rows=parseInt(moldEl.dataset.rows,10);
     var gp=getGridPos(plateEl), g=geomAt(plateEl);
@@ -436,7 +459,16 @@
     Array.from(workspace.querySelectorAll('.item')).forEach(function(el){el.remove();});
     refreshSummary();
   });
-  document.getElementById('print').addEventListener('click', function(){ window.print(); });
+
+  /* ===== Stampa solo tavolo ===== */
+  document.getElementById('print').addEventListener('click', function(){
+    try{
+      document.body.classList.add('print-only-workspace'); // attiva layout di stampa
+      window.print();
+    } finally {
+      document.body.classList.remove('print-only-workspace'); // ripristina UI
+    }
+  });
 
   // Avvio
   createSeries(3);
