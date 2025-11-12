@@ -73,8 +73,13 @@
 
   .num-box{display:inline-flex;align-items:center;gap:6px}
   .num-box input{width:56px;max-width:100%;text-align:center;padding:6px 8px;border:1px solid var(--muted);border-radius:10px}
-  .btn{padding:6px 10px;border-radius:10px;border:1px solid var(--muted);background:#fff;cursor:pointer}
+  .btn{padding:6px 10px;border-radius:10px;border:1px solid var(--muted);background:#fff;cursor:pointer;transition:opacity .2s ease}
   .btn:active{transform:translateY(1px)}
+  .btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+  }
   select{padding:6px 8px;border:1px solid var(--muted);border-radius:10px;min-width:64px}
   @media (max-width: 640px){
     .controls table select{width:100%}
@@ -220,8 +225,7 @@
       </div>
 
       <div class="actions">
-        <button class="btn primary" onclick="verifica()">✔ Verifica</button>
-        <button class="btn" onclick="simplifyCuts()">➗ Semplifica tagli</button>
+        <button id="simplifyBtn" class="btn" onclick="simplifyCuts()" disabled>➗ Semplifica tagli</button>
         <button class="btn" onclick="resetAll()">🔄 Ricomincia</button>
       </div>
     </section>
@@ -285,6 +289,7 @@ let numeratori=[0,0,0];
 let denominatori=[4,4,4];
 let gustoNomi=["Gusto 1","Gusto 2","Gusto 3"];
 let charts=[], globalChart;
+const SIMPLIFY_THRESHOLD = 1e-6;
 
 function mcd(a,b){return b?mcd(b,a%b):Math.abs(a);}
 function mcm(a,b){return Math.abs(a*b)/mcd(a,b);}
@@ -345,20 +350,11 @@ function chg(i,delta){
   updateView();
 }
 
-function verifica(){
-  const M = mcmArray(denominatori);
-  const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
-  const status = document.getElementById("status");
-  const miss = Math.round((1-somma)*M);
-  if(somma===0){
-    status.className="status warn";
-    status.textContent="Piatto vuoto: scegli gli spicchi.";
-  }else{
-    status.className="status "+(Math.abs(somma-1)<1e-6 ? "ok" : somma<1 ? "warn" : "err");
-    if(Math.abs(somma-1)<1e-6) status.textContent="✅ Ottimo! Pizza completa con 3 gusti.";
-    else if(somma<1) status.innerHTML=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`;
-    else status.textContent="Hai superato 1 pizza: riduci un gusto.";
-  }
+function hasReducibleFractions(){
+  return numeratori.some((n,i)=>{
+    if(n===0) return false;
+    return mcd(n,denominatori[i])>1;
+  });
 }
 
 function updateView(){
@@ -378,14 +374,26 @@ function updateView(){
   const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
   const status = document.getElementById("status");
   const miss = Math.max(0, Math.round((1-somma)*M));
+  const reducible = hasReducibleFractions();
   let cls="warn", msg="Piatto vuoto: scegli gli spicchi.";
   if(somma>0 && somma<1-1e-9){ msg=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`; }
-  if(Math.abs(somma-1)<1e-6){ cls="ok"; msg="✅ Ottimo! Pizza completa con 3 gusti."; }
+  if(Math.abs(somma-1)<SIMPLIFY_THRESHOLD){
+    cls="ok";
+    msg = reducible
+      ? "✅ Pizza completa! Puoi semplificare i tagli."
+      : "✅ Pizza completa: tagli già ridotti al minimo (nessuna semplificazione necessaria).";
+  }
   if(somma>1+1e-9){ cls="err"; msg="🚫 Hai superato 1 pizza: riduci un gusto."; }
   status.className="status "+cls; status.innerHTML=msg;
 
   const totSp = Math.round(somma*M);
   document.getElementById("tot").textContent = `Totale: ${totSp} spicchi su ${M} (${somma.toFixed(2)} pizza)`;
+
+  const simplifyBtn = document.getElementById("simplifyBtn");
+  if(simplifyBtn){
+    const enable = Math.abs(somma-1)<SIMPLIFY_THRESHOLD && reducible;
+    simplifyBtn.disabled = !enable;
+  }
 
   updateCharts(M);
 }
@@ -396,13 +404,25 @@ function makeCharts(){
     charts[i] = new Chart(document.getElementById("c"+i),{
       type:"pie",
       data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:"#fff",borderWidth:1}]},
-      options:{plugins:{legend:{display:false},tooltip:{enabled:false}},animation:false,responsive:true,maintainAspectRatio:true}
+      options:{
+        plugins:{legend:{display:false},tooltip:{enabled:false}},
+        animation:{duration:1800,easing:"easeInOutCubic",animateRotate:true,animateScale:false},
+        animations:{rotation:{duration:1800,easing:"easeInOutCubic"}},
+        responsive:true,
+        maintainAspectRatio:true
+      }
     });
   }
   globalChart = new Chart(document.getElementById("global"),{
     type:"pie",
     data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:"#fff",borderWidth:1}]},
-    options:{plugins:{legend:{display:false},tooltip:{enabled:false}},animation:false,responsive:true,maintainAspectRatio:true}
+    options:{
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      animation:{duration:2000,easing:"easeInOutCubic",animateRotate:true,animateScale:false},
+      animations:{rotation:{duration:2000,easing:"easeInOutCubic"}},
+      responsive:true,
+      maintainAspectRatio:true
+    }
   });
 }
 
@@ -443,7 +463,7 @@ function resetAll(){
 function simplifyCuts(){
   const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
   const status = document.getElementById("status");
-  if(Math.abs(somma-1)>1e-6){
+  if(Math.abs(somma-1)>SIMPLIFY_THRESHOLD){
     status.className = "status warn";
     status.textContent = "Completa la pizza (totale = 1) prima di semplificare i tagli.";
     return;
