@@ -221,6 +221,7 @@
 
       <div class="actions">
         <button class="btn primary" onclick="verifica()">✔ Verifica</button>
+        <button class="btn" onclick="simplifyCuts()">➗ Semplifica tagli</button>
         <button class="btn" onclick="resetAll()">🔄 Ricomincia</button>
       </div>
     </section>
@@ -288,6 +289,16 @@ let charts=[], globalChart;
 function mcd(a,b){return b?mcd(b,a%b):Math.abs(a);}
 function mcm(a,b){return Math.abs(a*b)/mcd(a,b);}
 function mcmArray(arr){return arr.reduce((acc,n)=>mcm(acc,n),1);}
+
+function ensureOption(selectEl, value){
+  const exists = Array.from(selectEl.options).some(opt => parseInt(opt.value,10) === value);
+  if(!exists){
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = value;
+    selectEl.appendChild(opt);
+  }
+}
 
 /* === Nomi dinamici dei gusti === */
 function setName(i, val){
@@ -427,6 +438,45 @@ function resetAll(){
     setName(i, "");
   }
   updateView();
+}
+
+function simplifyCuts(){
+  const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
+  const status = document.getElementById("status");
+  if(Math.abs(somma-1)>1e-6){
+    status.className = "status warn";
+    status.textContent = "Completa la pizza (totale = 1) prima di semplificare i tagli.";
+    return;
+  }
+
+  let changed=false;
+  for(let i=0;i<3;i++){
+    const n = numeratori[i];
+    const d = denominatori[i];
+    if(n===0) continue;
+    const g = mcd(n,d);
+    if(g>1){
+      const newN = n/g;
+      const newD = d/g;
+      numeratori[i]=newN;
+      denominatori[i]=newD;
+      document.getElementById("num"+i).value = newN;
+      const sel = document.getElementById("den"+i);
+      ensureOption(sel, newD);
+      sel.value = newD;
+      changed=true;
+    }
+  }
+
+  updateView();
+
+  if(changed){
+    status.className = "status ok";
+    status.textContent = "Tagli semplificati: frazioni ridotte ai minimi termini.";
+  }else{
+    status.className = "status ok";
+    status.textContent = "Le frazioni sono già nella forma più semplice.";
+  }
 }
 
 /* Avvio */
