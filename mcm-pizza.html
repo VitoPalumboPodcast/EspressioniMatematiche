@@ -317,7 +317,12 @@ function chg(i,delta){
 
   const prov = numeratori.map((n,idx)=> idx===i ? val/denominatori[i] : n/denominatori[idx])
                          .reduce((a,b)=>a+b,0);
-  if(prov>1+1e-9) return;
+  if(prov>1+1e-9){
+    const status=document.getElementById("status");
+    status.className="status err";
+    status.textContent="🚫 Non puoi superare la dimensione di una pizza.";
+    return;
+  }
 
   numeratori[i]=val;
   document.getElementById("num"+i).value=val;
