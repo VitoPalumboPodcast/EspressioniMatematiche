@@ -105,6 +105,7 @@
   @media (max-width: 900px){ .mini-row{grid-template-columns:1fr} }
   .mini .head{text-align:center;font-weight:700;margin-bottom:4px}
   .mini canvas{width:100% !important;aspect-ratio:1/1 !important;height:auto !important;display:block}
+  .mini .taglio{margin-bottom:6px;font-size:.9rem;color:#4a4f5d}
 
   /* Frazioni con barra orizzontale */
   .frac{display:inline-grid; grid-template-rows:auto 2px auto; align-items:center; justify-items:center; line-height:1}
@@ -127,7 +128,7 @@
         Troviamolo insieme! 🍕
       </div>
 
-      <div id="status" class="status warn">Mancano <span id="miss">3</span> spicchi per completare 1 pizza.</div>
+      <div id="status" class="status warn">Piatto vuoto: scegli gli spicchi.</div>
 
       <div class="legend">
         <span class="badge"><span class="dot p1"></span> <span id="nameBadge0">Gusto 1</span></span>
@@ -154,7 +155,7 @@
               <td>
                 <div class="num-box">
                   <button class="btn" onclick="chg(0,-1)">−</button>
-                  <input id="num0" type="number" value="1" readonly>
+                  <input id="num0" type="number" value="0" readonly>
                   <button class="btn" onclick="chg(0,1)">+</button>
                 </div>
               </td>
@@ -174,7 +175,7 @@
               <td>
                 <div class="num-box">
                   <button class="btn" onclick="chg(1,-1)">−</button>
-                  <input id="num1" type="number" value="1" readonly>
+                  <input id="num1" type="number" value="0" readonly>
                   <button class="btn" onclick="chg(1,1)">+</button>
                 </div>
               </td>
@@ -194,7 +195,7 @@
               <td>
                 <div class="num-box">
                   <button class="btn" onclick="chg(2,-1)">−</button>
-                  <input id="num2" type="number" value="1" readonly>
+                  <input id="num2" type="number" value="0" readonly>
                   <button class="btn" onclick="chg(2,1)">+</button>
                 </div>
               </td>
@@ -254,14 +255,17 @@
       <div class="mini-row">
         <div class="card mini">
           <div class="head" id="headMini0">Gusto 1 (originale)</div>
+          <div class="taglio" id="taglioMini0">Taglio: 4 spicchi</div>
           <canvas id="c0"></canvas>
         </div>
         <div class="card mini">
           <div class="head" id="headMini1">Gusto 2 (originale)</div>
+          <div class="taglio" id="taglioMini1">Taglio: 4 spicchi</div>
           <canvas id="c1"></canvas>
         </div>
         <div class="card mini">
           <div class="head" id="headMini2">Gusto 3 (originale)</div>
+          <div class="taglio" id="taglioMini2">Taglio: 4 spicchi</div>
           <canvas id="c2"></canvas>
         </div>
       </div>
@@ -276,7 +280,7 @@ function fracHTML(n, d){
 
 /* === Stato e utilità === */
 const colori=["#ff7043","#26a69a","#ffca28"];
-let numeratori=[1,1,1];
+let numeratori=[0,0,0];
 let denominatori=[4,4,4];
 let gustoNomi=["Gusto 1","Gusto 2","Gusto 3"];
 let charts=[], globalChart;
@@ -301,6 +305,7 @@ function renderFractions(){
   for(let i=0;i<3;i++){
     document.getElementById("frac"+i).innerHTML = fracHTML(numeratori[i],denominatori[i]);
     document.getElementById("orig"+i).innerHTML = fracHTML(numeratori[i],denominatori[i]);
+    document.getElementById("taglioMini"+i).textContent = `Taglio: ${denominatori[i]} spicchi`;
   }
 }
 
@@ -312,7 +317,7 @@ function sync(i){
 function chg(i,delta){
   const max=denominatori[i];
   let val = numeratori[i] + delta;
-  if(val<1) val=1;
+  if(val<0) val=0;
   if(val>max) val=max;
 
   const prov = numeratori.map((n,idx)=> idx===i ? val/denominatori[i] : n/denominatori[idx])
@@ -334,10 +339,15 @@ function verifica(){
   const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
   const status = document.getElementById("status");
   const miss = Math.round((1-somma)*M);
-  status.className="status "+(Math.abs(somma-1)<1e-6 ? "ok" : somma<1 ? "warn" : "err");
-  if(Math.abs(somma-1)<1e-6) status.textContent="✅ Ottimo! Pizza completa con 3 gusti.";
-  else if(somma<1) status.innerHTML=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`;
-  else status.textContent="Hai superato 1 pizza: riduci un gusto.";
+  if(somma===0){
+    status.className="status warn";
+    status.textContent="Piatto vuoto: scegli gli spicchi.";
+  }else{
+    status.className="status "+(Math.abs(somma-1)<1e-6 ? "ok" : somma<1 ? "warn" : "err");
+    if(Math.abs(somma-1)<1e-6) status.textContent="✅ Ottimo! Pizza completa con 3 gusti.";
+    else if(somma<1) status.innerHTML=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`;
+    else status.textContent="Hai superato 1 pizza: riduci un gusto.";
+  }
 }
 
 function updateView(){
@@ -357,7 +367,8 @@ function updateView(){
   const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
   const status = document.getElementById("status");
   const miss = Math.max(0, Math.round((1-somma)*M));
-  let cls="warn", msg=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`;
+  let cls="warn", msg="Piatto vuoto: scegli gli spicchi.";
+  if(somma>0 && somma<1-1e-9){ msg=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`; }
   if(Math.abs(somma-1)<1e-6){ cls="ok"; msg="✅ Ottimo! Pizza completa con 3 gusti."; }
   if(somma>1+1e-9){ cls="err"; msg="🚫 Hai superato 1 pizza: riduci un gusto."; }
   status.className="status "+cls; status.innerHTML=msg;
@@ -409,9 +420,9 @@ function updateCharts(M){
 
 /* === Reset === */
 function resetAll(){
-  numeratori=[1,1,1]; denominatori=[4,4,4];
+  numeratori=[0,0,0]; denominatori=[4,4,4];
   for(let i=0;i<3;i++){
-    document.getElementById("num"+i).value=1; document.getElementById("den"+i).value=4;
+    document.getElementById("num"+i).value=0; document.getElementById("den"+i).value=4;
     document.getElementById("inputName"+i).value="";
     setName(i, "");
   }
