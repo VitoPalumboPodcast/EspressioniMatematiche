@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pizza e Spicchi – Missione 1 (header compatto + gusti dinamici)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  :root{
+    --ink:#1f2330; --bg:#fafafa; --panel:#ffffff; --muted:#e3e7f0; --accent:#1e88e5;
+    --ok:#2e7d32; --warn:#ef6c00; --err:#c62828;
+    --p1:#ff7043; --p2:#26a69a; --p3:#ffca28; --grey:#e0e0e0;
+    --head:#f5f8ff; --strip:#fcfcff;
+  }
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+
+  /* Layout ampio e bilanciato */
+  .page{
+    max-width:1500px;
+    margin:0 auto; padding:12px;
+    display:grid; gap:12px;
+    grid-template-columns: minmax(320px, 0.95fr) minmax(320px, 1.05fr);
+    align-items:start;
+  }
+  @media (max-width: 1120px){ .page{grid-template-columns:1fr} }
+
+  .restore-bar{
+    grid-column:1/-1;
+    display:none;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:8px;
+    padding:12px;
+    border:1px dashed var(--muted);
+    border-radius:14px;
+    background:var(--head);
+  }
+  .restore-bar.active{display:flex}
+  .restore-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid var(--muted);
+    background:var(--panel);
+    font-size:.9rem;
+  }
+  .restore-chip button{
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    border-radius:999px;
+    padding:4px 10px;
+    cursor:pointer;
+    font-weight:600;
+  }
+
+  .closable{position:relative;padding-top:32px;padding-right:32px;box-sizing:border-box}
+  .close-btn{
+    position:absolute;
+    top:10px;right:10px;
+    border:none;
+    background:var(--muted);
+    color:var(--ink);
+    width:28px;height:28px;
+    border-radius:50%;
+    cursor:pointer;
+    font-size:1rem;
+    line-height:1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:background .2s ease, transform .2s ease;
+  }
+  .close-btn:hover{background:#d0d6e6}
+  .close-btn:active{transform:scale(.92)}
+  .collapsed{display:none !important}
+
+  .card{
+    background:var(--panel);border:1px solid var(--muted);border-radius:14px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.04);padding:12px;
+  }
+  .hgroup h1{margin:.1rem 0 .4rem 0;font-size:1.45rem}
+  .problem{
+    background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:10px;margin-top:6px;line-height:1.35
+  }
+
+  /* Semaforo */
+  .status{margin-top:8px;padding:10px 12px;border-radius:10px;font-weight:700}
+  .ok{background:#e8f5e9;color:var(--ok);border:1px solid #c8e6c9}
+  .warn{background:#fff3e0;color:var(--warn);border:1px solid #ffe0b2}
+  .err{background:#ffebee;color:var(--err);border:1px solid #ffcdd2}
+
+  /* Badge legenda gusti */
+  .controls .legend{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px 0;align-items:center}
+  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--muted);background:#fff;font-size:.9rem}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot.p1{background:var(--p1)} .dot.p2{background:var(--p2)} .dot.p3{background:var(--p3)}
+
+  /* Tabella: header su 2 righe, senza scroll orizzontale */
+  .table-wrap{margin-top:8px;overflow:auto}
+  table{width:100%;min-width:460px;border-collapse:separate;border-spacing:0;table-layout:auto}
+  thead th{
+    position:sticky;top:0;background:var(--head);z-index:1;
+    text-transform:uppercase;letter-spacing:.02em;font-size:.8rem;white-space:normal;line-height:1.1
+  }
+  th,td{
+    border:1px solid var(--muted);padding:6px;text-align:center;
+    font-size:.94rem;
+  }
+  /* Larghezze più compatte per evitare overflow */
+  th.w-gusto{width:clamp(110px,22vw,150px)}
+  th.w-num{width:clamp(120px,24vw,180px)}
+  th.w-den{width:clamp(100px,20vw,150px)}
+  th.w-frac{width:clamp(110px,22vw,160px)}
+  th.w-spicchi{width:clamp(140px,26vw,200px)}
+
+  tbody tr:nth-child(odd){background:var(--strip)}
+  .gcell{display:inline-flex;align-items:center;gap:6px;justify-content:center}
+  .gname{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media (max-width: 640px){
+    .gname{max-width:none;white-space:normal}
+  }
+
+  .num-box{display:inline-flex;align-items:center;gap:6px}
+  .num-box input{width:56px;max-width:100%;text-align:center;padding:6px 8px;border:1px solid var(--muted);border-radius:10px}
+  .btn{padding:6px 10px;border-radius:10px;border:1px solid var(--muted);background:#fff;cursor:pointer;transition:opacity .2s ease}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{
+    opacity:.45;
+    cursor:not-allowed;
+    transform:none;
+  }
+  select{padding:6px 8px;border:1px solid var(--muted);border-radius:10px;min-width:64px}
+  @media (max-width: 640px){
+    .controls table select{width:100%}
+  }
+
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .primary{background:var(--accent);color:#fff;border:none}
+
+  /* Moduli nomi gusti */
+  .flavors{display:grid;grid-template-columns:1fr 1fr 1fr; gap:8px; margin-top:10px}
+  @media (max-width: 640px){ .flavors{grid-template-columns:1fr} }
+  .flavor{display:flex;align-items:center;gap:8px}
+  .flavor input{flex:1;padding:8px 10px;border:1px solid var(--muted);border-radius:10px}
+
+  /* Visualizzazioni */
+  .viz{display:grid;gap:12px}
+  .grid-viz{display:grid;gap:12px;grid-template-columns: minmax(240px, 1fr) minmax(240px, 1fr)}
+  @media (max-width: 1250px){ .grid-viz{grid-template-columns:1fr} }
+
+  .big-pizza{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .big-pizza canvas{width:100%;max-width:480px;max-height:300px;height:auto !important;display:block}
+
+  .mcm-box .k{font-weight:700}
+  .mcm-box .info{font-size:.95rem;margin-top:.4rem}
+  .mcm-box .table-wrap{max-height:240px;overflow:auto;border-radius:10px}
+
+  .mini-row{display:grid;gap:12px;grid-template-columns: repeat(3, 1fr)}
+  @media (max-width: 900px){ .mini-row{grid-template-columns:1fr} }
+  .mini .head{text-align:center;font-weight:700;margin-bottom:4px}
+  .mini canvas{width:100% !important;aspect-ratio:1/1 !important;height:auto !important;display:block}
+  .mini .taglio{margin-bottom:6px;font-size:.9rem;color:#4a4f5d}
+
+  /* Frazioni con barra orizzontale */
+  .frac{display:inline-grid; grid-template-rows:auto 2px auto; align-items:center; justify-items:center; line-height:1}
+  .frac .top{padding:0 .2em}
+  .frac .bar{width:100%; height:2px; background:#111; margin:.12em 0}
+  .frac .bot{padding:0 .2em}
+</style>
+</head>
+<body>
+  <div class="page">
+    <div id="restoreBar" class="restore-bar" aria-live="polite" aria-label="Sezioni nascoste"></div>
+    <!-- COLONNA SINISTRA -->
+    <section class="card controls closable" data-id="controls" data-name="Controlli e gusti">
+      <h1>🍕 Pizza e Spicchi – Missione 1</h1>
+
+      <!-- Problema (Matteo, 3 gusti) -->
+      <div class="problem">
+        <strong>Problema.</strong> Matteo deve mangiare una pizza, ma vuole assaggiare tre gusti diversi.
+        Può creare la sua pizza prendendo gli spicchi da tre pizze diverse, che taglierà in spicchi uguali. Ma quanto devono essere grandi questi spicchi?
+        Questo gioco ti mostra un numero speciale che ti aiuterà a tagliare tutte le pizze allo stesso modo per comporre una pizza perfetta.
+        Troviamolo insieme! 🍕
+      </div>
+
+      <div id="status" class="status warn">Piatto vuoto: scegli gli spicchi.</div>
+
+      <div class="legend">
+        <span class="badge"><span class="dot p1"></span> <span id="nameBadge0">Gusto 1</span></span>
+        <span class="badge"><span class="dot p2"></span> <span id="nameBadge1">Gusto 2</span></span>
+        <span class="badge"><span class="dot p3"></span> <span id="nameBadge2">Gusto 3</span></span>
+      </div>
+
+      <div class="table-wrap" aria-label="Controlli gusti">
+        <table>
+          <thead>
+            <tr>
+              <th class="w-gusto">Gusto</th>
+              <th class="w-num">Numeratore</th>
+              <th class="w-den">Denominatore</th>
+              <th class="w-frac">Frazione</th>
+              <th class="w-spicchi">Spicchi<br><small>(taglio comune)</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div class="gcell"><span class="dot p1"></span><span id="nameCell0" class="gname">Gusto 1</span></div>
+              </td>
+              <td>
+                <div class="num-box">
+                  <button class="btn" onclick="chg(0,-1)">−</button>
+                  <input id="num0" type="number" value="0" readonly>
+                  <button class="btn" onclick="chg(0,1)">+</button>
+                </div>
+              </td>
+              <td>
+                <select id="den0" onchange="sync(0)">
+                  <option>2</option><option>3</option><option selected>4</option>
+                  <option>6</option><option>8</option><option>12</option>
+                </select>
+              </td>
+              <td id="frac0"></td>
+              <td id="sp0"></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="gcell"><span class="dot p2"></span><span id="nameCell1" class="gname">Gusto 2</span></div>
+              </td>
+              <td>
+                <div class="num-box">
+                  <button class="btn" onclick="chg(1,-1)">−</button>
+                  <input id="num1" type="number" value="0" readonly>
+                  <button class="btn" onclick="chg(1,1)">+</button>
+                </div>
+              </td>
+              <td>
+                <select id="den1" onchange="sync(1)">
+                  <option>2</option><option>3</option><option selected>4</option>
+                  <option>6</option><option>8</option><option>12</option>
+                </select>
+              </td>
+              <td id="frac1"></td>
+              <td id="sp1"></td>
+            </tr>
+            <tr>
+              <td>
+                <div class="gcell"><span class="dot p3"></span><span id="nameCell2" class="gname">Gusto 3</span></div>
+              </td>
+              <td>
+                <div class="num-box">
+                  <button class="btn" onclick="chg(2,-1)">−</button>
+                  <input id="num2" type="number" value="0" readonly>
+                  <button class="btn" onclick="chg(2,1)">+</button>
+                </div>
+              </td>
+              <td>
+                <select id="den2" onchange="sync(2)">
+                  <option>2</option><option>3</option><option selected>4</option>
+                  <option>6</option><option>8</option><option>12</option>
+                </select>
+              </td>
+              <td id="frac2"></td>
+              <td id="sp2"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Moduli per i nomi dei gusti -->
+      <div class="flavors" aria-label="Nomi dei gusti">
+        <div class="flavor"><span class="dot p1"></span><input id="inputName0" type="text" placeholder="Gusto 1 (es. Margherita)" oninput="setName(0,this.value)"></div>
+        <div class="flavor"><span class="dot p2"></span><input id="inputName1" type="text" placeholder="Gusto 2 (es. Diavola)" oninput="setName(1,this.value)"></div>
+        <div class="flavor"><span class="dot p3"></span><input id="inputName2" type="text" placeholder="Gusto 3 (es. Vegetariana)" oninput="setName(2,this.value)"></div>
+      </div>
+
+      <div class="actions">
+        <button id="simplifyBtn" class="btn" onclick="simplifyCuts()" disabled>➗ Semplifica tagli</button>
+        <button class="btn" onclick="resetAll()">🔄 Ricomincia</button>
+      </div>
+    </section>
+
+    <!-- COLONNA DESTRA -->
+    <section class="viz">
+      <div class="grid-viz">
+        <div class="card big-pizza closable" data-id="pizzaTotale" data-name="Pizza totale">
+          <div style="font-weight:700">Pizza totale (taglio comune = <span id="mcm">12</span> spicchi)</div>
+          <canvas id="global"></canvas>
+          <div id="tot" style="font-weight:700"></div>
+        </div>
+
+        <div class="card mcm-box closable" data-id="mcmPanel" data-name="Minimo Comune Multiplo">
+          <div style="font-weight:700">Minimo Comune Multiplo</div>
+          <div>Denominatori scelti: <span id="den-list">4, 4, 4</span></div>
+          <div class="info">Il <strong>MCM</strong> è il numero minimo di <em>spicchi uguali</em> che permette di comporre tutti i gusti senza avanzi.</div>
+
+          <div class="table-wrap" style="margin-top:8px">
+            <table aria-label="Frazioni equivalenti sul taglio comune">
+              <thead><tr><th>Gusto</th><th>Originale</th><th>Equivalente</th></tr></thead>
+              <tbody>
+                <tr><td id="mcmName0">Gusto 1</td><td id="orig0"></td><td id="eq0"></td></tr>
+                <tr><td id="mcmName1">Gusto 2</td><td id="orig1"></td><td id="eq1"></td></tr>
+                <tr><td id="mcmName2">Gusto 3</td><td id="orig2"></td><td id="eq2"></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="mini-row">
+        <div class="card mini closable" data-id="mini0" data-name="Gusto 1 (originale)">
+          <div class="head" id="headMini0">Gusto 1 (originale)</div>
+          <div class="taglio" id="taglioMini0">Taglio: 4 spicchi</div>
+          <canvas id="c0"></canvas>
+        </div>
+        <div class="card mini closable" data-id="mini1" data-name="Gusto 2 (originale)">
+          <div class="head" id="headMini1">Gusto 2 (originale)</div>
+          <div class="taglio" id="taglioMini1">Taglio: 4 spicchi</div>
+          <canvas id="c1"></canvas>
+        </div>
+        <div class="card mini closable" data-id="mini2" data-name="Gusto 3 (originale)">
+          <div class="head" id="headMini2">Gusto 3 (originale)</div>
+          <div class="taglio" id="taglioMini2">Taglio: 4 spicchi</div>
+          <canvas id="c2"></canvas>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* === Frazioni con barra orizzontale === */
+function fracHTML(n, d){
+  return `<span class="frac"><span class="top">${n}</span><span class="bar"></span><span class="bot">${d}</span></span>`;
+}
+
+/* === Stato e utilità === */
+const colori=["#ff7043","#26a69a","#ffca28"];
+let numeratori=[0,0,0];
+let denominatori=[4,4,4];
+let gustoNomi=["Gusto 1","Gusto 2","Gusto 3"];
+let charts=[], globalChart;
+const SIMPLIFY_THRESHOLD = 1e-6;
+const restoreBar = document.getElementById("restoreBar");
+const restoreChips = new Map();
+
+function mcd(a,b){return b?mcd(b,a%b):Math.abs(a);}
+function mcm(a,b){return Math.abs(a*b)/mcd(a,b);}
+function mcmArray(arr){return arr.reduce((acc,n)=>mcm(acc,n),1);}
+
+function ensureOption(selectEl, value){
+  const exists = Array.from(selectEl.options).some(opt => parseInt(opt.value,10) === value);
+  if(!exists){
+    const opt = document.createElement("option");
+    opt.value = value;
+    opt.textContent = value;
+    selectEl.appendChild(opt);
+  }
+}
+
+function refreshRestoreBarVisibility(){
+  if(!restoreBar) return;
+  const has = restoreChips.size>0;
+  restoreBar.classList.toggle("active", has);
+  restoreBar.setAttribute("aria-hidden", has?"false":"true");
+}
+
+function addRestoreChip(id,label){
+  if(!restoreBar || restoreChips.has(id)) return;
+  const chip = document.createElement("div");
+  chip.className = "restore-chip";
+  chip.dataset.id = id;
+  const text = document.createElement("span");
+  text.textContent = label;
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.textContent = "Riapri";
+  btn.addEventListener("click",()=>restoreSection(id));
+  chip.append(text, btn);
+  restoreBar.appendChild(chip);
+  restoreChips.set(id, chip);
+  refreshRestoreBarVisibility();
+}
+
+function removeRestoreChip(id){
+  const chip = restoreChips.get(id);
+  if(chip){
+    chip.remove();
+    restoreChips.delete(id);
+    refreshRestoreBarVisibility();
+  }
+}
+
+function updateCloseButtonLabel(section){
+  if(!section) return;
+  const label = section.dataset.name || "sezione";
+  const btn = section.querySelector(".close-btn");
+  if(btn){
+    btn.setAttribute("aria-label", "Chiudi "+label);
+    btn.title = "Chiudi "+label;
+  }
+}
+
+function closeSection(id){
+  const section = document.querySelector(`[data-id="${id}"]`);
+  if(!section || section.classList.contains("collapsed")) return;
+  section.classList.add("collapsed");
+  const label = section.dataset.name || "sezione";
+  addRestoreChip(id, label);
+}
+
+function restoreSection(id){
+  const section = document.querySelector(`[data-id="${id}"]`);
+  if(!section) return;
+  section.classList.remove("collapsed");
+  removeRestoreChip(id);
+}
+
+function initClosables(){
+  document.querySelectorAll('.closable').forEach(section => {
+    const id = section.dataset.id;
+    if(!id) return;
+    if(!section.dataset.name){
+      const heading = section.querySelector('h1, h2, h3, .head, strong');
+      section.dataset.name = heading ? heading.textContent.trim() : 'Sezione';
+    }
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'close-btn';
+    btn.textContent = '×';
+    btn.addEventListener('click', ()=>closeSection(id));
+    section.insertBefore(btn, section.firstChild);
+    updateCloseButtonLabel(section);
+  });
+}
+
+/* === Nomi dinamici dei gusti === */
+function setName(i, val){
+  const name = (val && val.trim()) ? val.trim() : `Gusto ${i+1}`;
+  gustoNomi[i]=name;
+  // Aggiorna ovunque
+  document.getElementById("nameBadge"+i).textContent=name;
+  document.getElementById("nameCell"+i).textContent=name;
+  document.getElementById("mcmName"+i).textContent=name;
+  document.getElementById("headMini"+i).textContent=`${name} (originale)`;
+  const miniSection = document.querySelector(`[data-id="mini${i}"]`);
+  if(miniSection){
+    miniSection.dataset.name = `${name} (originale)`;
+    updateCloseButtonLabel(miniSection);
+  }
+}
+
+/* === UI === */
+function renderFractions(){
+  for(let i=0;i<3;i++){
+    document.getElementById("frac"+i).innerHTML = fracHTML(numeratori[i],denominatori[i]);
+    document.getElementById("orig"+i).innerHTML = fracHTML(numeratori[i],denominatori[i]);
+    document.getElementById("taglioMini"+i).textContent = `Taglio: ${denominatori[i]} spicchi`;
+  }
+}
+
+function sync(i){
+  denominatori[i]=parseInt(document.getElementById("den"+i).value);
+  updateView();
+}
+
+function chg(i,delta){
+  const max=denominatori[i];
+  let val = numeratori[i] + delta;
+  if(val<0) val=0;
+  if(val>max) val=max;
+
+  const prov = numeratori.map((n,idx)=> idx===i ? val/denominatori[i] : n/denominatori[idx])
+                         .reduce((a,b)=>a+b,0);
+  if(prov>1+1e-9){
+    const status=document.getElementById("status");
+    status.className="status err";
+    status.textContent="🚫 Non puoi superare la dimensione di una pizza.";
+    return;
+  }
+
+  numeratori[i]=val;
+  document.getElementById("num"+i).value=val;
+  updateView();
+}
+
+function hasReducibleFractions(){
+  return numeratori.some((n,i)=>{
+    if(n===0) return false;
+    return mcd(n,denominatori[i])>1;
+  });
+}
+
+function updateView(){
+  renderFractions();
+  document.getElementById("den-list").textContent = denominatori.join(", ");
+
+  const M = mcmArray(denominatori);
+  document.getElementById("mcm").textContent = M;
+
+  // Colonna “Spicchi (taglio comune)” SOLO frazione tipografica
+  for(let i=0;i<3;i++){
+    const sp = numeratori[i]*(M/denominatori[i]);
+    document.getElementById("sp"+i).innerHTML = fracHTML(sp, M);
+    document.getElementById("eq"+i).innerHTML = fracHTML(sp, M);
+  }
+
+  const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
+  const status = document.getElementById("status");
+  const miss = Math.max(0, Math.round((1-somma)*M));
+  const reducible = hasReducibleFractions();
+  let cls="warn", msg="Piatto vuoto: scegli gli spicchi.";
+  if(somma>0 && somma<1-1e-9){ msg=`Mancano <span id="miss">${miss}</span> spicchi per completare 1 pizza.`; }
+  if(Math.abs(somma-1)<SIMPLIFY_THRESHOLD){
+    cls="ok";
+    msg = reducible
+      ? "✅ Pizza completa! Puoi semplificare i tagli."
+      : "✅ Pizza completa: tagli già ridotti al minimo (nessuna semplificazione necessaria).";
+  }
+  if(somma>1+1e-9){ cls="err"; msg="🚫 Hai superato 1 pizza: riduci un gusto."; }
+  status.className="status "+cls; status.innerHTML=msg;
+
+  const totSp = Math.round(somma*M);
+  document.getElementById("tot").textContent = `Totale: ${totSp} spicchi su ${M} (${somma.toFixed(2)} pizza)`;
+
+  const simplifyBtn = document.getElementById("simplifyBtn");
+  if(simplifyBtn){
+    const enable = Math.abs(somma-1)<SIMPLIFY_THRESHOLD && reducible;
+    simplifyBtn.disabled = !enable;
+  }
+
+  updateCharts(M);
+}
+
+/* === Grafici === */
+function makeCharts(){
+  for(let i=0;i<3;i++){
+    charts[i] = new Chart(document.getElementById("c"+i),{
+      type:"pie",
+      data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:"#fff",borderWidth:1}]},
+      options:{
+        plugins:{legend:{display:false},tooltip:{enabled:false}},
+        animation:{duration:1800,easing:"easeInOutCubic",animateRotate:true,animateScale:false},
+        animations:{rotation:{duration:1800,easing:"easeInOutCubic"}},
+        responsive:true,
+        maintainAspectRatio:true
+      }
+    });
+  }
+  globalChart = new Chart(document.getElementById("global"),{
+    type:"pie",
+    data:{labels:[],datasets:[{data:[],backgroundColor:[],borderColor:"#fff",borderWidth:1}]},
+    options:{
+      plugins:{legend:{display:false},tooltip:{enabled:false}},
+      animation:{duration:2000,easing:"easeInOutCubic",animateRotate:true,animateScale:false},
+      animations:{rotation:{duration:2000,easing:"easeInOutCubic"}},
+      responsive:true,
+      maintainAspectRatio:true
+    }
+  });
+}
+
+function updateCharts(M){
+  // Originali
+  for(let i=0;i<3;i++){
+    const n=numeratori[i], d=denominatori[i];
+    const data=[], col=[];
+    for(let j=0;j<d;j++){ data.push(1); col.push(j<n?colori[i]:"#eeeeee"); }
+    charts[i].data.datasets[0].data = data;
+    charts[i].data.datasets[0].backgroundColor = col;
+    charts[i].update();
+  }
+  // Globale @MCM
+  const dataG=[], colG=[]; let sumSp=0;
+  for(let i=0;i<3;i++){
+    const sp = numeratori[i]*(M/denominatori[i]);
+    for(let k=0;k<sp;k++){ dataG.push(1); colG.push(colori[i]); }
+    sumSp+=sp;
+  }
+  for(let k=sumSp;k<M;k++){ dataG.push(1); colG.push("#cccccc"); }
+  globalChart.data.datasets[0].data = dataG;
+  globalChart.data.datasets[0].backgroundColor = colG;
+  globalChart.update();
+}
+
+/* === Reset === */
+function resetAll(){
+  numeratori=[0,0,0]; denominatori=[4,4,4];
+  for(let i=0;i<3;i++){
+    document.getElementById("num"+i).value=0; document.getElementById("den"+i).value=4;
+    document.getElementById("inputName"+i).value="";
+    setName(i, "");
+  }
+  updateView();
+}
+
+function simplifyCuts(){
+  const somma = numeratori.map((n,i)=>n/denominatori[i]).reduce((a,b)=>a+b,0);
+  const status = document.getElementById("status");
+  if(Math.abs(somma-1)>SIMPLIFY_THRESHOLD){
+    status.className = "status warn";
+    status.textContent = "Completa la pizza (totale = 1) prima di semplificare i tagli.";
+    return;
+  }
+
+  let changed=false;
+  for(let i=0;i<3;i++){
+    const n = numeratori[i];
+    const d = denominatori[i];
+    if(n===0) continue;
+    const g = mcd(n,d);
+    if(g>1){
+      const newN = n/g;
+      const newD = d/g;
+      numeratori[i]=newN;
+      denominatori[i]=newD;
+      document.getElementById("num"+i).value = newN;
+      const sel = document.getElementById("den"+i);
+      ensureOption(sel, newD);
+      sel.value = newD;
+      changed=true;
+    }
+  }
+
+  updateView();
+
+  if(changed){
+    status.className = "status ok";
+    status.textContent = "Tagli semplificati: frazioni ridotte ai minimi termini.";
+  }else{
+    status.className = "status ok";
+    status.textContent = "Le frazioni sono già nella forma più semplice.";
+  }
+}
+
+/* Avvio */
+initClosables();
+makeCharts();
+updateView();
+</script>
+</body>
+</html>
