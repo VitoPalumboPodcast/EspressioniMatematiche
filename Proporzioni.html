@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proporzioni Pizza Party</title>
+  <style>
+    :root {
+      --bg: #fff7ec;
+      --panel: #ffffff;
+      --accent: #ff7043;
+      --accent-2: #ffb74d;
+      --text: #2c2a32;
+      --green: #2e7d32;
+      --blue: #1976d2;
+      --shadow: 0 12px 24px rgba(0,0,0,0.08);
+      font-size: clamp(16px, 1.2vw + 14px, 22px);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, system-ui, -apple-system, sans-serif;
+      background: radial-gradient(circle at 10% 20%, rgba(255, 179, 71, 0.25), transparent 40%),
+                  radial-gradient(circle at 90% 10%, rgba(255, 112, 67, 0.18), transparent 40%),
+                  var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: linear-gradient(135deg, #ff7043, #ff8a65);
+      color: #fff;
+      padding: 1.1rem clamp(1rem, 2vw, 2rem);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    header h1 span { font-size: 1.4em; }
+    .subtitle {
+      margin: 0;
+      font-weight: 600;
+      font-size: 1rem;
+      opacity: 0.9;
+    }
+    main {
+      flex: 1;
+      padding: clamp(1rem, 2vw, 2rem);
+      display: grid;
+      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      align-items: start;
+    }
+    .card {
+      background: var(--panel);
+      border-radius: 18px;
+      padding: 1rem;
+      box-shadow: var(--shadow);
+      border: 2px solid rgba(0,0,0,0.05);
+    }
+    .intro {
+      display: grid;
+      gap: 0.6rem;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(25, 118, 210, 0.12);
+      color: var(--blue);
+      padding: 0.45rem 0.8rem;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .status {
+      border-radius: 14px;
+      padding: 0.8rem 1rem;
+      background: #fff3e0;
+      border: 2px solid #ffe0b2;
+      font-weight: 700;
+      display: grid;
+      gap: 0.25rem;
+    }
+    .status.ok { background: #e8f5e9; border-color: #c8e6c9; color: var(--green); }
+    .status.err { background: #ffebee; border-color: #ffcdd2; color: #c62828; }
+    .status .tip { font-weight: 500; color: #5a5a63; }
+    .level-info {
+      display: grid;
+      gap: 0.4rem;
+    }
+    .chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .chip {
+      background: #fffaf3;
+      border-radius: 14px;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #ffe0b2;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-weight: 700;
+    }
+    .chip strong {
+      background: var(--accent);
+      color: #fff;
+      padding: 0.2rem 0.55rem;
+      border-radius: 10px;
+    }
+    .controls {
+      display: grid;
+      gap: 0.75rem;
+    }
+    .topping {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      border-radius: 14px;
+      border: 1px dashed rgba(0,0,0,0.08);
+      background: #fffaf7;
+    }
+    .topping h3 { margin: 0; font-size: 1.05rem; }
+    .topping small { color: #5a5a63; }
+    .counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding: 0.25rem;
+    }
+    .counter button {
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.1rem;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+    }
+    .counter button:active { transform: translateY(1px); box-shadow: none; }
+    .counter input {
+      width: 72px;
+      text-align: center;
+      font-size: 1.2rem;
+      border: none;
+      background: transparent;
+      font-weight: 700;
+      outline: none;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+    .btn {
+      border: none;
+      background: var(--blue);
+      color: #fff;
+      padding: 0.75rem 1.1rem;
+      border-radius: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 10px 18px rgba(25,118,210,0.25);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+    .btn:active { transform: translateY(1px); box-shadow: 0 6px 12px rgba(25,118,210,0.2); }
+    .btn.alt { background: var(--accent-2); box-shadow: 0 10px 18px rgba(255,183,77,0.3); color: #6b3400; }
+    .btn.ghost { background: #fff; color: #333; border: 2px solid rgba(0,0,0,0.08); box-shadow: none; }
+    .score {
+      display: flex;
+      gap: 0.6rem;
+      align-items: center;
+      font-weight: 800;
+      color: #6b3400;
+    }
+    .progress {
+      height: 12px;
+      background: #ffe0b2;
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress span {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      background: linear-gradient(90deg, #ff7043, #ffb74d);
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .pizza-visual {
+      display: grid;
+      gap: 1rem;
+      place-items: center;
+      text-align: center;
+    }
+    .pizza {
+      width: min(320px, 70vw);
+      aspect-ratio: 1/1;
+      border-radius: 50%;
+      background: conic-gradient(#ffe0b2 0deg 360deg);
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.12), inset 0 0 0 14px #f5c26b;
+      overflow: hidden;
+    }
+    .pizza::after {
+      content: "";
+      position: absolute;
+      inset: 12%;
+      border-radius: 50%;
+      box-shadow: inset 0 0 0 18px rgba(0,0,0,0.05);
+    }
+    .slice-label {
+      position: absolute;
+      inset: 30%;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.9);
+      font-weight: 900;
+      color: #6b3400;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    }
+    .legend {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .legend .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.7rem;
+      border-radius: 12px;
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      font-weight: 700;
+    }
+    .dot {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+    }
+    .helper {
+      font-weight: 600;
+      color: #5a5a63;
+      background: #fff;
+      padding: 0.75rem 1rem;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1><span>🍕</span> Proporzioni Pizza Party</h1>
+      <p class="subtitle">Un gioco gentile per imparare le proporzioni con fette di pizza</p>
+    </div>
+    <div class="score" aria-live="polite">Punti felici: <span id="score">0</span> ⭐</div>
+  </header>
+
+  <main>
+    <section class="card intro">
+      <div class="pill">Passo dopo passo 🧡</div>
+      <p>Aiuta il pizzaiolo a preparare gli ordini. Mantieni la <strong>proporzione</strong> indicata tra i gusti. Usa i pulsanti + e - per aggiungere o togliere fette.</p>
+      <div class="status" id="status" aria-live="polite">
+        <span id="statusMain">Scegli il numero di fette.</span>
+        <span class="tip" id="statusTip">La somma delle fette deve rispettare la proporzione.</span>
+      </div>
+      <div class="level-info">
+        <div class="chips" id="chips"></div>
+        <div class="progress" aria-label="Progresso livelli">
+          <span id="progress"></span>
+        </div>
+      </div>
+      <div class="controls" id="controls"></div>
+      <div class="actions">
+        <button class="btn" id="check">Controlla 🌟</button>
+        <button class="btn alt" id="hint">Suggerimento</button>
+        <button class="btn ghost" id="reset">Azzera livello</button>
+      </div>
+      <p class="helper" id="helper">Consiglio: trova un numero che diviso per la proporzione dia numeri interi.</p>
+    </section>
+
+    <section class="card pizza-visual">
+      <div class="pizza" aria-label="Pizza con fette colorate" id="pizza">
+        <div class="slice-label" id="sliceLabel">0 fette</div>
+      </div>
+      <div class="legend" id="legend"></div>
+      <p class="helper">Quando la proporzione è giusta, la pizza sorride! 🧀</p>
+    </section>
+  </main>
+
+  <script>
+    const tasks = [
+      { name: "Pizza Amici", toppings: ["Margherita", "Funghi"], colors: ["#ff7043", "#ffca28"], ratio: [1, 2], total: 9, hint: "Per ogni fetta di Margherita servono due fette di Funghi." },
+      { name: "Pizza Festa", toppings: ["Mozzarella", "Verdure"], colors: ["#ff8a65", "#66bb6a"], ratio: [2, 3], total: 10, hint: "Pensa a gruppi da 5 fette: 2 di Mozzarella e 3 di Verdure." },
+      { name: "Pizza Arcobaleno", toppings: ["Pomodoro", "Basilico"], colors: ["#f4511e", "#43a047"], ratio: [3, 1], total: 12, hint: "Ogni gruppo ha 3 fette rosse e 1 verde." },
+      { name: "Pizza Mare", toppings: ["Tonno", "Mais"], colors: ["#26c6da", "#fbc02d"], ratio: [1, 1], total: 8, hint: "Le fette devono essere uguali fra loro." }
+    ];
+
+    let level = 0;
+    let score = 0;
+    let counts = [0,0];
+
+    const chips = document.getElementById('chips');
+    const controls = document.getElementById('controls');
+    const statusBox = document.getElementById('status');
+    const statusMain = document.getElementById('statusMain');
+    const statusTip = document.getElementById('statusTip');
+    const pizza = document.getElementById('pizza');
+    const sliceLabel = document.getElementById('sliceLabel');
+    const legend = document.getElementById('legend');
+    const helper = document.getElementById('helper');
+    const scoreEl = document.getElementById('score');
+    const progress = document.getElementById('progress');
+
+    const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
+
+    function setupLevel() {
+      const task = tasks[level];
+      counts = [...task.ratio];
+      renderChips(task);
+      renderControls(task);
+      updatePizza(task);
+      updateHelper(`Proporzione da rispettare: ${task.ratio[0]} : ${task.ratio[1]} (totale ${task.total} fette).`);
+      setStatus('Scegli il numero di fette.', 'La proporzione deve restare uguale.', 'neutral');
+      updateProgress();
+    }
+
+    function renderChips(task) {
+      chips.innerHTML = '';
+      const ratioChip = document.createElement('div');
+      ratioChip.className = 'chip';
+      ratioChip.innerHTML = `<strong>${task.ratio[0]} : ${task.ratio[1]}</strong> proporzione`;
+      const totalChip = document.createElement('div');
+      totalChip.className = 'chip';
+      totalChip.innerHTML = `<strong>${task.total}</strong> fette da preparare`;
+      const nameChip = document.createElement('div');
+      nameChip.className = 'chip';
+      nameChip.innerHTML = `Ordine: <strong>${task.name}</strong>`;
+      chips.append(ratioChip, totalChip, nameChip);
+    }
+
+    function renderControls(task) {
+      controls.innerHTML = '';
+      legend.innerHTML = '';
+      task.toppings.forEach((top, i) => {
+        const block = document.createElement('div');
+        block.className = 'topping';
+        block.innerHTML = `
+          <div>
+            <h3>${top}</h3>
+            <small>Fette di questo gusto</small>
+          </div>
+          <div class="counter" data-idx="${i}">
+            <button aria-label="Togli una fetta">-</button>
+            <input type="number" inputmode="numeric" aria-label="Numero di fette di ${top}" value="${counts[i]}" min="0" />
+            <button aria-label="Aggiungi una fetta">+</button>
+          </div>
+        `;
+        controls.append(block);
+
+        const badge = document.createElement('div');
+        badge.className = 'badge';
+        badge.innerHTML = `<span class="dot" style="background:${task.colors[i]}"></span> ${top}`;
+        legend.append(badge);
+      });
+
+      controls.querySelectorAll('.counter').forEach(counter => {
+        const idx = Number(counter.dataset.idx);
+        const minus = counter.querySelector('button:first-of-type');
+        const plus = counter.querySelector('button:last-of-type');
+        const input = counter.querySelector('input');
+        minus.addEventListener('click', () => {
+          counts[idx] = clamp(counts[idx] - 1, 0, 100);
+          input.value = counts[idx];
+          updatePizza(tasks[level]);
+        });
+        plus.addEventListener('click', () => {
+          counts[idx] = clamp(counts[idx] + 1, 0, 120);
+          input.value = counts[idx];
+          updatePizza(tasks[level]);
+        });
+        input.addEventListener('input', () => {
+          const val = parseInt(input.value, 10);
+          counts[idx] = isNaN(val) ? 0 : clamp(val, 0, 120);
+          input.value = counts[idx];
+          updatePizza(tasks[level]);
+        });
+      });
+    }
+
+    function updatePizza(task) {
+      const total = Math.max(1, counts[0] + counts[1]);
+      const aDeg = (counts[0] / total) * 360;
+      const gradient = `conic-gradient(${task.colors[0]} 0deg ${aDeg}deg, ${task.colors[1]} ${aDeg}deg 360deg)`;
+      pizza.style.background = gradient;
+      sliceLabel.textContent = `${counts[0] + counts[1]} fette`;
+    }
+
+    function setStatus(main, tip, mode) {
+      statusMain.textContent = main;
+      statusTip.textContent = tip;
+      statusBox.classList.remove('ok', 'err');
+      if (mode === 'ok') statusBox.classList.add('ok');
+      if (mode === 'err') statusBox.classList.add('err');
+    }
+
+    function updateHelper(text) { helper.textContent = text; }
+
+    function updateProgress() {
+      const pct = ((level) / tasks.length) * 100;
+      progress.style.width = `${pct}%`;
+    }
+
+    function checkProportion() {
+      const task = tasks[level];
+      const total = counts[0] + counts[1];
+      if (total !== task.total) {
+        setStatus(`Mancano ${Math.abs(task.total - total)} fette per arrivare a ${task.total}.`, 'Aggiungi o togli fette fino al totale richiesto.', 'err');
+        return false;
+      }
+      if (counts[0] * task.ratio[1] !== counts[1] * task.ratio[0]) {
+        setStatus('La proporzione non è ancora giusta.', `Per ogni ${task.ratio[0]} fette di ${task.toppings[0]}, servono ${task.ratio[1]} di ${task.toppings[1]}.`, 'err');
+        return false;
+      }
+      setStatus('Grande! Proporzione perfetta!', 'Passa al prossimo ordine.', 'ok');
+      score += 5;
+      scoreEl.textContent = score;
+      progress.style.width = `${((level + 1) / tasks.length) * 100}%`;
+      return true;
+    }
+
+    function nextLevel() {
+      if (level < tasks.length - 1) {
+        level++;
+        setupLevel();
+      } else {
+        setStatus('Tutte le pizze servite! 🧡', 'Puoi rigiocare usando "Azzera livello".', 'ok');
+      }
+    }
+
+    document.getElementById('check').addEventListener('click', () => {
+      const ok = checkProportion();
+      if (ok) setTimeout(nextLevel, 900);
+    });
+
+    document.getElementById('hint').addEventListener('click', () => {
+      const task = tasks[level];
+      updateHelper(task.hint);
+    });
+
+    document.getElementById('reset').addEventListener('click', () => {
+      setupLevel();
+    });
+
+    setupLevel();
+  </script>
+</body>
+</html>
