@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <title>Retta, distanza e triangolo rettangolo – app interattiva</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- MathJax 3 per formule in LaTeX -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']]
+      },
+      svg: {
+        fontCache: 'global'
+      }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: Helvetica, Arial, sans-serif;
+      background-color: #f4f5f7;
+      color: #222;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .wrapper {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px) minmax(320px, 700px);
+      grid-gap: 0.8rem;
+      width: 100%;
+      max-width: 1100px;
+      padding: 0.8rem;
+    }
+
+    @media (max-width: 800px) {
+      .wrapper {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background-color: #ffffff;
+      border-radius: 8px;
+      padding: 0.8rem 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      margin: 0 0 0.3rem;
+    }
+
+    .sottotitolo {
+      font-size: 0.9rem;
+      margin: 0 0 0.5rem;
+      color: #4b5563;
+    }
+
+    .box {
+      margin-top: 0.5rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+      background-color: #fafafa;
+    }
+
+    .titolo-box {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+
+    .formula-riga {
+      font-size: 0.9rem;
+      margin: 0.25rem 0;
+    }
+
+    .formula-math {
+      margin-top: 0.1rem;
+    }
+
+    /* TABELLA A E B */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 0.25rem 0.35rem;
+      text-align: center;
+      vertical-align: middle;
+    }
+
+    th {
+      background-color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    tr.riga-a td {
+      background-color: #dcfce7; /* verde chiaro */
+    }
+
+    tr.riga-b td {
+      background-color: #ffedd5; /* arancione chiaro */
+    }
+
+    tr.riga-a td:first-child {
+      font-weight: 700;
+      color: #15803d;
+    }
+
+    tr.riga-b td:first-child {
+      font-weight: 700;
+      color: #c2410c;
+    }
+
+    .num-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+    }
+
+    .num-stepper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.05rem;
+    }
+
+    input[type="number"] {
+      width: 4rem;
+      padding: 0.15rem 0.25rem;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      border: 1px solid #9ca3af;
+      background-color: #ffffff;
+      text-align: center;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .step-btn {
+      border: 1px solid #60a5fa;
+      background-color: #bfdbfe;
+      color: #1f2937;
+      padding: 0.05rem 0.3rem;
+      font-size: 0.7rem;
+      line-height: 1;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .step-btn:active {
+      transform: translateY(1px);
+    }
+
+    input[type="number"]:focus-visible,
+    input[type="range"]:focus-visible {
+      outline: 3px solid #fb923c;
+      outline-offset: 2px;
+    }
+
+    /* EQUAZIONE E SLIDER M,Q */
+    .equazione-riga {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .equazione-label {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .equazione-valore {
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: #b91c1c;
+      white-space: nowrap;
+    }
+
+    .equazione-simbolo {
+      margin: 0 0.1rem;
+    }
+
+    .eq-edit {
+      border-bottom: 2px dotted #f97316;
+      padding: 0 0.15rem;
+      cursor: pointer;
+    }
+
+    .eq-edit:hover {
+      background-color: #fff7ed;
+    }
+
+    .mq-riga {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      column-gap: 0.4rem;
+      row-gap: 0.2rem;
+      font-size: 0.9rem;
+      margin-top: 0.2rem;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    .mq-valore {
+      font-weight: 600;
+      min-width: 3.2rem;
+      text-align: right;
+    }
+
+    .tipo-retta {
+      margin-top: 0.3rem;
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    .tipo-retta span {
+      font-weight: 600;
+    }
+
+    /* SLIDER PUNTI */
+    .slider-punto {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 0.4rem;
+      row-gap: 0.2rem;
+      align-items: center;
+      font-size: 0.9rem;
+      margin-top: 0.2rem;
+    }
+
+    .coord-punto {
+      margin-top: 0.3rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .nota-intercetta {
+      margin-top: 0.2rem;
+      font-size: 0.8rem;
+      color: #4b5563;
+    }
+
+    .gruppo-punto {
+      margin-top: 0.3rem;
+      padding-top: 0.2rem;
+      border-top: 1px dashed #e5e7eb;
+    }
+
+    .gruppo-punto:first-of-type {
+      border-top: none;
+    }
+
+    .gruppo-punto-titolo {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 0.1rem;
+    }
+
+    .messaggio {
+      margin-top: 0.3rem;
+      font-size: 0.8rem;
+      color: #b91c1c;
+      min-height: 1.1em;
+    }
+
+    /* Pannello grafico */
+    .chart-panel {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .chart-titolo {
+      font-size: 1rem;
+      margin: 0 0 0.2rem;
+    }
+
+    .legenda-minima {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+      color: #4b5563;
+    }
+
+    .legenda-item {
+      display: flex;
+      align-items: center;
+      gap: 0.2rem;
+    }
+
+    .pallino {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    .pallino-a { background-color: #16a34a; }
+    .pallino-b { background-color: #f97316; }
+    .pallino-i { background-color: #7c3aed; }
+    .pallino-j { background-color: #0ea5e9; }
+    .pallino-m { background-color: #111827; }
+    .pallino-c { background-color: #3b82f6; }
+
+    .chart-container {
+      position: relative;
+      flex: 1;
+      min-height: 320px;
+    }
+
+    #grafico {
+      width: 100% !important;
+      height: 100% !important;
+    }
+
+    /* Toggle sezioni (indice) */
+    .toggle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.85rem;
+    }
+
+    .toggle-item label {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <main class="wrapper">
+    <!-- PANNELLO SINISTRO: CONTROLLO -->
+    <section class="panel">
+      <h1>Retta, distanza e triangolo rettangolo</h1>
+      <p class="sottotitolo">
+        Muovi i punti A e B o i parametri m e q: la retta, le intercette, la distanza,
+        il punto medio e il triangolo rettangolo con ipotenusa AB si aggiornano in tempo reale.
+      </p>
+
+      <!-- 0. TOGGLE SEZIONI -->
+      <div class="box" id="boxToggle">
+        <div class="titolo-box">0. Mostra / nascondi sezioni</div>
+        <div class="toggle-list">
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="toggleAB" checked>
+              Punti A e B (tabella)
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="toggleMQ" checked>
+              Coefficiente angolare m ed equazione y = m·x + q
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="togglePuntiIntercette" checked>
+              Punti sulla retta e intercette I, J
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="toggleFormule" checked>
+              Formule (m, distanza, punto medio, forme dell’equazione)
+            </label>
+          </div>
+          <div class="toggle-item">
+            <label>
+              <input type="checkbox" id="toggleTriangolo" checked>
+              Triangolo rettangolo con ipotenusa AB e perimetro
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. PUNTI A E B -->
+      <div class="box" id="boxAB">
+        <div class="titolo-box">1. Punti A e B sul piano cartesiano</div>
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>x</th>
+              <th>y</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="riga-a">
+              <td>A</td>
+              <td>
+                <div class="num-control">
+                  <input id="x1" type="number" min="-10" max="10" step="1" value="-2">
+                  <div class="num-stepper">
+                    <button type="button" class="step-btn step-up">▲</button>
+                    <button type="button" class="step-btn step-down">▼</button>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="num-control">
+                  <input id="y1" type="number" min="-10" max="10" step="1" value="1">
+                  <div class="num-stepper">
+                    <button type="button" class="step-btn step-up">▲</button>
+                    <button type="button" class="step-btn step-down">▼</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr class="riga-b">
+              <td>B</td>
+              <td>
+                <div class="num-control">
+                  <input id="x2" type="number" min="-10" max="10" step="1" value="3">
+                  <div class="num-stepper">
+                    <button type="button" class="step-btn step-up">▲</button>
+                    <button type="button" class="step-btn step-down">▼</button>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="num-control">
+                  <input id="y2" type="number" min="-10" max="10" step="1" value="3">
+                  <div class="num-stepper">
+                    <button type="button" class="step-btn step-up">▲</button>
+                    <button type="button" class="step-btn step-down">▼</button>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div id="messaggio" class="messaggio"></div>
+      </div>
+
+      <!-- 2. COEFFICIENTE ANGOLARE m E EQUAZIONE y = m·x + q -->
+      <div class="box" id="boxMQ">
+        <div class="titolo-box">2. Coefficiente angolare m ed equazione della retta</div>
+
+        <div class="equazione-riga">
+          <span class="equazione-label">Equazione in forma esplicita:</span>
+          <span class="equazione-valore">
+            y =
+            <span id="eqM" class="eq-edit" title="Clicca per modificare m">0</span>
+            <span class="equazione-simbolo">· x</span>
+            <span id="eqSegnoQ" class="equazione-simbolo">+ </span>
+            <span id="eqQ" class="eq-edit" title="Clicca per modificare q">0</span>
+          </span>
+        </div>
+
+        <div class="mq-riga">
+          <span>m (coefficiente angolare / pendenza)</span>
+          <input type="range" id="sliderM" min="-5" max="5" step="0.1" value="0">
+          <span id="valM" class="mq-valore">0</span>
+
+          <span>q (ordinata all’origine)</span>
+          <input type="range" id="sliderQ" min="-20" max="20" step="0.1" value="0">
+          <span id="valQ" class="mq-valore">0</span>
+        </div>
+
+        <div class="tipo-retta">
+          Tipo di retta: <span id="tipoRetta">—</span>
+        </div>
+      </div>
+
+      <!-- 3. SLIDER PUNTI SULLA RETTA (A, B, INTERCETTE) -->
+      <div class="box" id="boxPuntiIntercette">
+        <div class="titolo-box">3. Punti sulla retta e intercette</div>
+
+        <div class="gruppo-punto">
+          <div class="gruppo-punto-titolo">Punto A</div>
+          <div class="slider-punto">
+            <span>X:</span>
+            <input type="range" id="sliderX1" min="-10" max="10" step="1" value="-2">
+            <span>Y:</span>
+            <input type="range" id="sliderY1" min="-10" max="10" step="1" value="1">
+          </div>
+        </div>
+
+        <div class="gruppo-punto">
+          <div class="gruppo-punto-titolo">Punto B</div>
+          <div class="slider-punto">
+            <span>X:</span>
+            <input type="range" id="sliderX2" min="-10" max="10" step="1" value="3">
+            <span>Y:</span>
+            <input type="range" id="sliderY2" min="-10" max="10" step="1" value="3">
+          </div>
+        </div>
+
+        <div class="gruppo-punto">
+          <div class="gruppo-punto-titolo">Punto I (intercetta con l’asse y)</div>
+          <div class="slider-punto">
+            <span>X:</span>
+            <input type="range" id="sliderIX" min="-10" max="10" step="1" value="0">
+            <span>Y:</span>
+            <input type="range" id="sliderIY" min="-10" max="10" step="0.1" value="0">
+          </div>
+          <div id="coordIntercettaY" class="coord-punto">
+            I (0, q) = (0, 0)
+          </div>
+          <div class="nota-intercetta">
+            Per l’intercetta con l’asse y, X viene sempre riportato a 0.
+          </div>
+        </div>
+
+        <div class="gruppo-punto">
+          <div class="gruppo-punto-titolo">Punto J (intercetta con l’asse x)</div>
+          <div class="slider-punto">
+            <span>X:</span>
+            <input type="range" id="sliderJX" min="-10" max="10" step="0.1" value="0">
+            <span>Y:</span>
+            <input type="range" id="sliderJY" min="-10" max="10" step="1" value="0">
+          </div>
+          <div id="coordIntercettaX" class="coord-punto">
+            J (x, 0) = (0, 0)
+          </div>
+          <div class="nota-intercetta">
+            Per l’intercetta con l’asse x, Y viene sempre riportato a 0.
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. FORMULE DERIVATE DA A E B -->
+      <div class="box" id="boxFormule">
+        <div class="titolo-box">4. Formule con A(x₁, y₁) e B(x₂, y₂)</div>
+
+        <p class="formula-riga"><strong>Punti A e B nel piano</strong></p>
+        <div id="formulaPunti" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Coefficiente angolare m (pendenza)</strong></p>
+        <div id="formulaM" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Equazione in forma esplicita: y = m·x + q</strong></p>
+        <div id="formulaEqEsp" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Equazione in forma punto–pendenza</strong></p>
+        <div id="formulaEqPP" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Distanza d(A, B)</strong></p>
+        <div id="formulaDAB" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Punto medio M del segmento AB</strong></p>
+        <div id="formulaMid" class="formula-math"></div>
+      </div>
+
+      <!-- 5. TRIANGOLO RETTANGOLO E PERIMETRO -->
+      <div class="box" id="boxTriangolo">
+        <div class="titolo-box">5. Triangolo rettangolo con ipotenusa AB</div>
+        <p class="formula-riga">
+          Consideriamo il triangolo rettangolo di vertici A, B e C, con
+          $C(x_1, y_2)$: i cateti sono paralleli agli assi, l’ipotenusa è il segmento AB.
+        </p>
+
+        <p class="formula-riga"><strong>Vertice C del triangolo rettangolo</strong></p>
+        <div id="formulaC" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Cateti del triangolo rettangolo</strong></p>
+        <div id="formulaCateti" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Ipotenusa (distanza tra A e B)</strong></p>
+        <div id="formulaIpot" class="formula-math"></div>
+
+        <p class="formula-riga"><strong>Perimetro del triangolo rettangolo</strong></p>
+        <div id="formulaPerimetro" class="formula-math"></div>
+      </div>
+    </section>
+
+    <!-- PANNELLO DESTRO: GRAFICO -->
+    <section class="panel chart-panel">
+      <h2 class="chart-titolo">Piano cartesiano</h2>
+      <div class="legenda-minima">
+        <div class="legenda-item"><span class="pallino pallino-a"></span> A</div>
+        <div class="legenda-item"><span class="pallino pallino-b"></span> B</div>
+        <div class="legenda-item"><span class="pallino pallino-m"></span> M punto medio</div>
+        <div class="legenda-item"><span class="pallino pallino-i"></span> I intercetta asse y</div>
+        <div class="legenda-item"><span class="pallino pallino-j"></span> J intercetta asse x</div>
+        <div class="legenda-item"><span class="pallino pallino-c"></span> C vertice triangolo rettangolo</div>
+      </div>
+      <div class="chart-container">
+        <canvas id="grafico" aria-label="Grafico piano cartesiano" role="img"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // -------------------------
+    // RIFERIMENTI DOM
+    // -------------------------
+    const canvas = document.getElementById('grafico');
+
+    const x1Input = document.getElementById('x1');
+    const y1Input = document.getElementById('y1');
+    const x2Input = document.getElementById('x2');
+    const y2Input = document.getElementById('y2');
+
+    const sliderX1 = document.getElementById('sliderX1');
+    const sliderY1 = document.getElementById('sliderY1');
+    const sliderX2 = document.getElementById('sliderX2');
+    const sliderY2 = document.getElementById('sliderY2');
+
+    const messaggioEl = document.getElementById('messaggio');
+
+    const sliderM = document.getElementById('sliderM');
+    const sliderQ = document.getElementById('sliderQ');
+    const valMEl  = document.getElementById('valM');
+    const valQEl  = document.getElementById('valQ');
+    const tipoRettaEl = document.getElementById('tipoRetta');
+
+    const sliderIX = document.getElementById('sliderIX');
+    const sliderIY = document.getElementById('sliderIY');
+    const sliderJX = document.getElementById('sliderJX');
+    const sliderJY = document.getElementById('sliderJY');
+
+    const coordIntercettaYEl = document.getElementById('coordIntercettaY');
+    const coordIntercettaXEl = document.getElementById('coordIntercettaX');
+
+    const eqMSpan = document.getElementById('eqM');
+    const eqQSpan = document.getElementById('eqQ');
+
+    const formulaPuntiEl   = document.getElementById('formulaPunti');
+    const formulaMEl       = document.getElementById('formulaM');
+    const formulaEqPPEl    = document.getElementById('formulaEqPP');
+    const formulaEqEspEl   = document.getElementById('formulaEqEsp');
+    const formulaDABEl     = document.getElementById('formulaDAB');
+    const formulaMidEl     = document.getElementById('formulaMid');
+
+    const formulaCEl        = document.getElementById('formulaC');
+    const formulaCatetiEl   = document.getElementById('formulaCateti');
+    const formulaIpotEl     = document.getElementById('formulaIpot');
+    const formulaPerimetroEl= document.getElementById('formulaPerimetro');
+
+    // Toggle sezioni
+    const toggleAB = document.getElementById('toggleAB');
+    const toggleMQ = document.getElementById('toggleMQ');
+    const togglePuntiIntercette = document.getElementById('togglePuntiIntercette');
+    const toggleFormule = document.getElementById('toggleFormule');
+    const toggleTriangolo = document.getElementById('toggleTriangolo');
+
+    const boxAB = document.getElementById('boxAB');
+    const boxMQ = document.getElementById('boxMQ');
+    const boxPuntiIntercette = document.getElementById('boxPuntiIntercette');
+    const boxFormule = document.getElementById('boxFormule');
+    const boxTriangolo = document.getElementById('boxTriangolo');
+
+    let x1 = Number(x1Input.value);
+    let y1 = Number(y1Input.value);
+    let x2 = Number(x2Input.value);
+    let y2 = Number(y2Input.value);
+
+    let mCorrente = 0;
+    let qCorrente = 0;
+
+    // -------------------------
+    // FUNZIONI DI SUPPORTO
+    // -------------------------
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function formattaNumero(num) {
+      let arrotondato = Math.round(num * 100) / 100;
+      if (Object.is(arrotondato, -0)) arrotondato = 0;
+      return arrotondato;
+    }
+
+    function aggiornaEquazioneETipo() {
+      const mR = formattaNumero(mCorrente);
+      const qR = formattaNumero(qCorrente);
+      const segnoSpan = document.getElementById('eqSegnoQ');
+
+      if (eqMSpan) {
+        eqMSpan.textContent = mR;
+      }
+      if (eqQSpan && segnoSpan) {
+        segnoSpan.textContent = qR >= 0 ? '+ ' : '- ';
+        eqQSpan.textContent = Math.abs(qR);
+      }
+
+      if (valMEl) valMEl.textContent = mR;
+      if (valQEl) valQEl.textContent = qR;
+
+      if (tipoRettaEl) {
+        let tipo = 'orizzontale';
+        if (mCorrente > 0) tipo = 'crescente';
+        else if (mCorrente < 0) tipo = 'decrescente';
+        tipoRettaEl.textContent = tipo;
+      }
+    }
+
+    // -------------------------
+    // DATASET PER CHART.JS
+    // -------------------------
+    const asseXDataset = {
+      label: 'Asse x',
+      data: [
+        { x: -10, y: 0 },
+        { x: 10,  y: 0 }
+      ],
+      borderColor: '#000000',
+      borderWidth: 2,
+      fill: false,
+      pointRadius: 0
+    };
+
+    const asseYDataset = {
+      label: 'Asse y',
+      data: [
+        { x: 0, y: -10 },
+        { x: 0, y: 10  }
+      ],
+      borderColor: '#000000',
+      borderWidth: 2,
+      fill: false,
+      pointRadius: 0
+    };
+
+    const rettaDataset = {
+      label: 'Retta',
+      data: [],
+      borderColor: 'rgba(239, 68, 68, 1)',
+      borderWidth: 3,
+      fill: false,
+      pointRadius: 0
+    };
+
+    // Segmento AB evidenziato sulla retta
+    const segmentoABDataset = {
+      label: 'Segmento AB',
+      data: [],
+      borderColor: 'rgba(239, 68, 68, 1)',
+      borderWidth: 5,
+      fill: false,
+      pointRadius: 0
+    };
+
+    const intercettaYDataset = {
+      label: 'Intercetta Y',
+      data: [],
+      borderColor: 'rgba(124, 58, 237, 1)',
+      backgroundColor: 'rgba(124, 58, 237, 1)',
+      pointRadius: 6,
+      showLine: false
+    };
+
+    const intercettaXDataset = {
+      label: 'Intercetta X',
+      data: [],
+      borderColor: 'rgba(14, 165, 233, 1)',
+      backgroundColor: 'rgba(14, 165, 233, 1)',
+      pointRadius: 6,
+      showLine: false
+    };
+
+    const guideADataset = {
+      label: 'Guide A',
+      data: [],
+      borderColor: 'rgba(22, 163, 74, 0.7)',
+      borderWidth: 1.5,
+      borderDash: [3, 3],
+      fill: false,
+      pointRadius: 0
+    };
+
+    const guideBDataset = {
+      label: 'Guide B',
+      data: [],
+      borderColor: 'rgba(249, 115, 22, 0.7)',
+      borderWidth: 1.5,
+      borderDash: [3, 3],
+      fill: false,
+      pointRadius: 0
+    };
+
+    const puntoADataset = {
+      label: 'Punto A',
+      data: [],
+      borderColor: 'rgba(22, 163, 74, 1)',
+      backgroundColor: 'rgba(22, 163, 74, 1)',
+      pointRadius: 6,
+      showLine: false
+    };
+
+    const puntoBDataset = {
+      label: 'Punto B',
+      data: [],
+      borderColor: 'rgba(249, 115, 22, 1)',
+      backgroundColor: 'rgba(249, 115, 22, 1)',
+      pointRadius: 6,
+      showLine: false
+    };
+
+    const puntoMidDataset = {
+      label: 'Punto medio M',
+      data: [],
+      borderColor: 'rgba(17, 24, 39, 1)',
+      backgroundColor: 'rgba(17, 24, 39, 1)',
+      pointRadius: 6,
+      showLine: false
+    };
+
+    // Punto C (vertice triangolo rettangolo)
+    const puntoCDataset = {
+      label: 'Punto C',
+      data: [],
+      borderColor: 'rgba(59, 130, 246, 1)',
+      backgroundColor: 'rgba(59, 130, 246, 1)',
+      pointRadius: 6,
+      showLine: false
+    };
+
+    // Cateti del triangolo rettangolo
+    const catetoVerticalDataset = {
+      label: 'Cateto verticale',
+      data: [],
+      borderColor: 'rgba(59, 130, 246, 1)',
+      borderWidth: 2,
+      borderDash: [4, 2],
+      fill: false,
+      pointRadius: 0
+    };
+
+    const catetoOrizzDataset = {
+      label: 'Cateto orizzontale',
+      data: [],
+      borderColor: 'rgba(45, 212, 191, 1)',
+      borderWidth: 2,
+      borderDash: [4, 2],
+      fill: false,
+      pointRadius: 0
+    };
+
+    // -------------------------
+    // PLUGIN: ETICHETTE A/B/M/C + x₁,y₁,x₂,y₂ SUGLI ASSI
+    // -------------------------
+    const labelPlugin = {
+      id: 'labelPlugin',
+      afterDatasetsDraw(chart) {
+        const { ctx, scales: { x, y } } = chart;
+        if (!x || !y) return;
+
+        ctx.save();
+        ctx.font = '12px Helvetica, Arial, sans-serif';
+
+        function drawPointLabel(point, label, color, dx, dy) {
+          const xPix = x.getPixelForValue(point.x);
+          const yPix = y.getPixelForValue(point.y);
+          ctx.fillStyle = color;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(label, xPix + dx, yPix + dy);
+        }
+
+        // Etichette x₁, y₁, x₂, y₂ accanto alle proiezioni di A e B
+        function drawAxisLabels(point, color, offsetY, labelX, labelY) {
+          const xPix = x.getPixelForValue(point.x);
+          const yAxisPix = y.getPixelForValue(0);
+          ctx.fillStyle = color;
+
+          // Etichetta x₁ / x₂ con valore
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText(
+            labelX + ' = ' + formattaNumero(point.x),
+            xPix,
+            yAxisPix + 2 + (offsetY || 0)
+          );
+
+          // Etichetta y₁ / y₂ con valore
+          const xAxisPix = x.getPixelForValue(0);
+          const yPix = y.getPixelForValue(point.y);
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(
+            labelY + ' = ' + formattaNumero(point.y),
+            xAxisPix - 4,
+            yPix + (offsetY || 0)
+          );
+        }
+
+        // Punto A
+        if (puntoADataset.data.length === 1) {
+          const pA = puntoADataset.data[0];
+          drawPointLabel(pA, 'A', 'rgba(22,163,74,1)', 6, -6);
+          drawAxisLabels(pA, 'rgba(22,163,74,1)', 0, 'x₁', 'y₁');
+        }
+
+        // Punto B
+        if (puntoBDataset.data.length === 1) {
+          const pB = puntoBDataset.data[0];
+          drawPointLabel(pB, 'B', 'rgba(249,115,22,1)', 6, -6);
+          drawAxisLabels(pB, 'rgba(249,115,22,1)', 12, 'x₂', 'y₂');
+        }
+
+        // Punto medio M
+        if (puntoMidDataset.data.length === 1) {
+          const pM = puntoMidDataset.data[0];
+          drawPointLabel(pM, 'M', 'rgba(17,24,39,1)', 6, -6);
+        }
+
+        // Punto C (se visibile)
+        if (!puntoCDataset.hidden && puntoCDataset.data.length === 1) {
+          const pC = puntoCDataset.data[0];
+          drawPointLabel(pC, 'C', 'rgba(59,130,246,1)', 6, -6);
+        }
+
+        ctx.restore();
+      }
+    };
+
+    // -------------------------
+    // PLUGIN: FRECCE E LETTERE X/Y AGLI ESTREMI DEGLI ASSI
+    // -------------------------
+    const axesDecorationPlugin = {
+      id: 'axesDecorationPlugin',
+      afterDatasetsDraw(chart) {
+        const { ctx, chartArea, scales: { x, y } } = chart;
+        if (!x || !y || !chartArea) return;
+
+        const { top, right } = chartArea;
+        const arrowSize = 8;
+
+        ctx.save();
+        ctx.fillStyle = '#000000';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+
+        // Asse x: freccia a destra
+        const yZeroPix = y.getPixelForValue(0);
+        const xArrowX = right - 4;
+        const xArrowY = yZeroPix;
+
+        ctx.beginPath();
+        ctx.moveTo(xArrowX, xArrowY);
+        ctx.lineTo(xArrowX - arrowSize, xArrowY - arrowSize / 2);
+        ctx.lineTo(xArrowX - arrowSize, xArrowY + arrowSize / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.font = '12px Helvetica, Arial, sans-serif';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('X', xArrowX + 4, xArrowY);
+
+        // Asse y: freccia in alto
+        const xZeroPix = x.getPixelForValue(0);
+        const yArrowX = xZeroPix;
+        const yArrowY = top + 4;
+
+        ctx.beginPath();
+        ctx.moveTo(yArrowX, yArrowY);
+        ctx.lineTo(yArrowX - arrowSize / 2, yArrowY + arrowSize);
+        ctx.lineTo(yArrowX + arrowSize / 2, yArrowY + arrowSize);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('Y', yArrowX, yArrowY - 4);
+
+        ctx.restore();
+      }
+    };
+
+    // -------------------------
+    // INIZIALIZZAZIONE CHART
+    // -------------------------
+    const myChart = new Chart(canvas, {
+      type: 'line',
+      data: {
+        datasets: [
+          asseXDataset,
+          asseYDataset,
+          rettaDataset,
+          segmentoABDataset,
+          catetoVerticalDataset,
+          catetoOrizzDataset,
+          intercettaYDataset,
+          intercettaXDataset,
+          guideADataset,
+          guideBDataset,
+          puntoADataset,
+          puntoBDataset,
+          puntoMidDataset,
+          puntoCDataset
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        parsing: false,
+        scales: {
+          x: {
+            type: 'linear',
+            position: 'bottom',
+            min: -10,
+            max: 10,
+            ticks: { stepSize: 1 },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            border: { display: false }
+          },
+          y: {
+            type: 'linear',
+            min: -10,
+            max: 10,
+            ticks: { stepSize: 1 },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            border: { display: false }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      },
+      plugins: [labelPlugin, axesDecorationPlugin]
+    });
+
+    // -------------------------
+    // FORMULE DA A, B, C (MathJax)
+    // -------------------------
+    function aggiornaFormuleABeTriangolo() {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      const xm = (x1 + x2) / 2;
+      const ym = (y1 + y2) / 2;
+
+      // Punti A e B
+      if (formulaPuntiEl) {
+        formulaPuntiEl.innerHTML =
+          '\\[ A(x_1,y_1) = A(' + x1 + ',' + y1 + '), \\quad ' +
+          'B(x_2,y_2) = B(' + x2 + ',' + y2 + ') \\]';
+      }
+
+      // m (pendenza)
+      if (formulaMEl) {
+        if (dx === 0) {
+          formulaMEl.innerHTML =
+            '\\[ x_1 = x_2 \\Rightarrow \\text{la retta è verticale e } m \\text{ non è definito} \\]';
+        } else {
+          const mVal = dy / dx;
+          formulaMEl.innerHTML =
+            '\\[ m = \\frac{y_2 - y_1}{x_2 - x_1} = ' +
+            '\\frac{' + dy + '}{' + dx + '} \\approx ' +
+            formattaNumero(mVal) + ' \\]';
+        }
+      }
+
+      // Equazioni
+      if (formulaEqEspEl && formulaEqPPEl) {
+        if (dx === 0) {
+          // retta verticale
+          formulaEqPPEl.innerHTML =
+            '\\[ x = ' + formattaNumero(x1) + ' \\]';
+          formulaEqEspEl.innerHTML =
+            '\\[ \\text{Per una retta verticale non esiste una forma } y = m x + q \\]';
+        } else {
+          const mR = formattaNumero(mCorrente);
+          const qR = formattaNumero(qCorrente);
+
+          formulaEqPPEl.innerHTML =
+            '\\[ y - ' + y1 + ' = ' + mR + '\\,(x - ' + x1 + ') \\]';
+
+          let eqSpec = 'y = ' + mR + '\\,x';
+          if (qR > 0) {
+            eqSpec += ' + ' + qR;
+          } else if (qR < 0) {
+            eqSpec += ' - ' + Math.abs(qR);
+          }
+          formulaEqEspEl.innerHTML =
+            '\\[ \\text{Forma generale: } y = m x + q. \\quad ' +
+            '\\text{Nel nostro caso: } ' + eqSpec + ' \\]';
+        }
+      }
+
+      // Distanza d(A,B)
+      if (formulaDABEl) {
+        formulaDABEl.innerHTML =
+          '\\[ d(A,B) = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2} ' +
+          '= \\sqrt{(' + dx + ')^2 + (' + dy + ')^2} ' +
+          '\\approx ' + formattaNumero(d) + ' \\]';
+      }
+
+      // Punto medio
+      if (formulaMidEl) {
+        formulaMidEl.innerHTML =
+          '\\[ M\\left(\\frac{x_1 + x_2}{2},\\,\\frac{y_1 + y_2}{2}\\right) = ' +
+          'M\\left(' + formattaNumero(xm) + ',' + formattaNumero(ym) + '\\right) \\]';
+      }
+
+      // Triangolo rettangolo: C, cateti, ipotenusa, perimetro
+      const cx = x1;
+      const cy = y2;
+      const cat1 = Math.abs(dy); // verticale
+      const cat2 = Math.abs(dx); // orizzontale
+      const perimetro = cat1 + cat2 + d;
+
+      if (formulaCEl) {
+        formulaCEl.innerHTML =
+          '\\[ C(x_1, y_2) = C(' + cx + ',' + cy + ') \\]';
+      }
+
+      if (formulaCatetiEl) {
+        formulaCatetiEl.innerHTML =
+          '\\[ c_1 = |y_2 - y_1| = ' + cat1 + ', \\quad ' +
+          'c_2 = |x_2 - x_1| = ' + cat2 + ' \\]';
+      }
+
+      if (formulaIpotEl) {
+        formulaIpotEl.innerHTML =
+          '\\[ \\text{ipotenusa } = d(A,B) \\approx ' +
+          formattaNumero(d) + ' \\]';
+      }
+
+      if (formulaPerimetroEl) {
+        formulaPerimetroEl.innerHTML =
+          '\\[ P_{\\triangle ABC} = c_1 + c_2 + d(A,B) ' +
+          '\\approx ' + formattaNumero(perimetro) + ' \\]';
+      }
+
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([
+          document.getElementById('boxFormule'),
+          document.getElementById('boxTriangolo')
+        ]);
+      }
+    }
+
+    // -------------------------
+    // FUNZIONI DI AGGIORNAMENTO GRAFICO
+    // -------------------------
+    function aggiornaRetta() {
+      const xMin = -10;
+      const xMax = 10;
+      const p1 = { x: xMin, y: mCorrente * xMin + qCorrente };
+      const p2 = { x: xMax, y: mCorrente * xMax + qCorrente };
+      rettaDataset.data = [p1, p2];
+    }
+
+    function aggiornaPuntiEGuideETrapezio() {
+      const puntoA = { x: x1, y: y1 };
+      const puntoB = { x: x2, y: y2 };
+      puntoADataset.data = [puntoA];
+      puntoBDataset.data = [puntoB];
+
+      // Segmento AB evidenziato
+      segmentoABDataset.data = [puntoA, puntoB];
+
+      // Punto medio M
+      const xm = (x1 + x2) / 2;
+      const ym = (y1 + y2) / 2;
+      puntoMidDataset.data = [{ x: xm, y: ym }];
+
+      // Guide tratteggiate da A e B agli assi
+      guideADataset.data = [
+        { x: 0,  y: y1 },
+        { x: x1, y: y1 },
+        { x: x1, y: 0  }
+      ];
+      guideBDataset.data = [
+        { x: 0,  y: y2 },
+        { x: x2, y: y2 },
+        { x: x2, y: 0  }
+      ];
+
+      // Punto C e cateti (solo se triangolo attivo; ma aggiorniamo comunque i dati)
+      const cx = x1;
+      const cy = y2;
+      puntoCDataset.data = [{ x: cx, y: cy }];
+
+      // Cateto verticale: A -> C
+      catetoVerticalDataset.data = [
+        { x: x1, y: y1 },
+        { x: x1, y: y2 }
+      ];
+
+      // Cateto orizzontale: C -> B
+      catetoOrizzDataset.data = [
+        { x: x1, y: y2 },
+        { x: x2, y: y2 }
+      ];
+    }
+
+    function aggiornaIntercettaY() {
+      const yI = qCorrente;
+      intercettaYDataset.data = [{ x: 0, y: yI }];
+
+      if (coordIntercettaYEl) {
+        coordIntercettaYEl.textContent =
+          'I (0, q) = (0, ' + formattaNumero(yI) + ')';
+      }
+
+      if (sliderIY) {
+        const min = Number(sliderIY.min);
+        const max = Number(sliderIY.max);
+        sliderIY.value = clamp(yI, min, max);
+      }
+      if (sliderIX) {
+        sliderIX.value = 0;
+      }
+    }
+
+    function aggiornaIntercettaX() {
+      const minX = myChart.options.scales.x.min ?? -10;
+      const maxX = myChart.options.scales.x.max ?? 10;
+
+      if (mCorrente === 0) {
+        intercettaXDataset.data = [];
+        if (coordIntercettaXEl) {
+          if (qCorrente === 0) {
+            coordIntercettaXEl.textContent =
+              'J: la retta coincide con l’asse x (infinite intercette).';
+          } else {
+            coordIntercettaXEl.textContent =
+              'J: nessuna intercetta con l’asse x (retta parallela).';
+          }
+        }
+        if (sliderJX) sliderJX.value = 0;
+        if (sliderJY) sliderJY.value = 0;
+        return;
+      }
+
+      const xInt = -qCorrente / mCorrente;
+      const clippedX = clamp(xInt, minX, maxX);
+      intercettaXDataset.data = [{ x: clippedX, y: 0 }];
+
+      if (coordIntercettaXEl) {
+        coordIntercettaXEl.textContent =
+          'J (x, 0) = (' + formattaNumero(xInt) + ', 0)';
+      }
+
+      if (sliderJX) {
+        const min = Number(sliderJX.min);
+        const max = Number(sliderJX.max);
+        sliderJX.value = clamp(xInt, min, max);
+      }
+      if (sliderJY) {
+        sliderJY.value = 0;
+      }
+    }
+
+    function aggiornaGraficoCompleto() {
+      aggiornaEquazioneETipo();
+      aggiornaRetta();
+      aggiornaPuntiEGuideETrapezio();
+      aggiornaIntercettaY();
+      aggiornaIntercettaX();
+      aggiornaFormuleABeTriangolo();
+      myChart.update();
+    }
+
+    // -------------------------
+    // AGGIORNAMENTO DA PUNTI A E B
+    // -------------------------
+    function aggiornaDaPunti() {
+      x1 = clamp(Number(x1Input.value), -10, 10);
+      y1 = clamp(Number(y1Input.value), -10, 10);
+      x2 = clamp(Number(x2Input.value), -10, 10);
+      y2 = clamp(Number(y2Input.value), -10, 10);
+
+      x1Input.value = x1;
+      y1Input.value = y1;
+      x2Input.value = x2;
+      y2Input.value = y2;
+
+      sliderX1.value = x1;
+      sliderY1.value = y1;
+      sliderX2.value = x2;
+      sliderY2.value = y2;
+
+      if (x1 === x2) {
+        if (x2 < 10) x2 = x1 + 1;
+        else x2 = x1 - 1;
+        x2Input.value = x2;
+        sliderX2.value = x2;
+        if (messaggioEl) {
+          messaggioEl.textContent = 'x₁ e x₂ non possono essere uguali: ho spostato x₂.';
+        }
+      } else {
+        if (messaggioEl) messaggioEl.textContent = '';
+      }
+
+      mCorrente = (y2 - y1) / (x2 - x1);
+      qCorrente = y1 - mCorrente * x1;
+
+      if (sliderM) sliderM.value = clamp(mCorrente, Number(sliderM.min), Number(sliderM.max));
+      if (sliderQ) sliderQ.value = clamp(qCorrente, Number(sliderQ.min), Number(sliderQ.max));
+
+      aggiornaGraficoCompleto();
+    }
+
+    // -------------------------
+    // AGGIORNAMENTO DA SLIDER m,q
+    // -------------------------
+    function aggiornaDaMQ() {
+      mCorrente = Number(sliderM.value);
+      qCorrente = Number(sliderQ.value);
+
+      x1 = clamp(Number(x1Input.value), -10, 10);
+      x2 = clamp(Number(x2Input.value), -10, 10);
+      if (x1 === x2) {
+        if (x2 < 10) x2 = x1 + 1;
+        else x2 = x1 - 1;
+        x2Input.value = x2;
+      }
+
+      let nuovoY1 = mCorrente * x1 + qCorrente;
+      let nuovoY2 = mCorrente * x2 + qCorrente;
+
+      nuovoY1 = clamp(Math.round(nuovoY1), -10, 10);
+      nuovoY2 = clamp(Math.round(nuovoY2), -10, 10);
+
+      y1 = nuovoY1;
+      y2 = nuovoY2;
+
+      x1Input.value = x1;
+      x2Input.value = x2;
+      y1Input.value = y1;
+      y2Input.value = y2;
+
+      sliderX1.value = x1;
+      sliderY1.value = y1;
+      sliderX2.value = x2;
+      sliderY2.value = y2;
+
+      aggiornaGraficoCompleto();
+    }
+
+    // -------------------------
+    // AGGIORNAMENTO DA INTERCETTA Y (sliderIY)
+    // -------------------------
+    function aggiornaDaIntercettaYUI() {
+      const newQ = Number(sliderIY.value);
+      sliderQ.value = newQ;
+      aggiornaDaMQ();
+    }
+
+    // -------------------------
+    // AGGIORNAMENTO DA INTERCETTA X (sliderJX)
+    // -------------------------
+    function aggiornaDaIntercettaXUI() {
+      const xInt = Number(sliderJX.value);
+
+      if (mCorrente === 0) {
+        // Se la retta è orizzontale, la porto su y = 0
+        qCorrente = 0;
+      } else {
+        qCorrente = -mCorrente * xInt;
+      }
+
+      sliderM.value = clamp(mCorrente, Number(sliderM.min), Number(sliderM.max));
+      sliderQ.value = clamp(qCorrente, Number(sliderQ.min), Number(sliderQ.max));
+
+      aggiornaDaMQ();
+    }
+
+    // -------------------------
+    // EDITING INLINE DI m E q NELL’EQUAZIONE
+    // -------------------------
+    function makeSpanEditable(span, getCurrent, setValue) {
+      if (!span) return;
+      span.style.cursor = 'pointer';
+      span.title = 'Clicca per modificare';
+
+      span.addEventListener('click', () => {
+        const existing = span.querySelector('input');
+        if (existing) {
+          existing.focus();
+          existing.select();
+          return;
+        }
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = String(formattaNumero(getCurrent()));
+        input.style.width = Math.max(3, input.value.length + 1) + 'ch';
+        input.style.fontSize = 'inherit';
+        input.style.fontWeight = 'inherit';
+        input.style.border = '1px solid #fb923c';
+        input.style.borderRadius = '3px';
+        input.style.textAlign = 'center';
+        input.style.backgroundColor = '#fff7ed';
+        input.style.padding = '0 2px';
+
+        span.textContent = '';
+        span.appendChild(input);
+
+        input.focus();
+        input.select();
+
+        function chiudi(confirmed) {
+          if (!input.isConnected) return;
+          span.removeChild(input);
+
+          if (confirmed) {
+            let valStr = input.value.trim().replace(',', '.');
+            const num = Number(valStr);
+            if (!isNaN(num)) {
+              setValue(num);
+              return;
+            }
+          }
+          aggiornaEquazioneETipo();
+          aggiornaFormuleABeTriangolo();
+          myChart.update();
+        }
+
+        input.addEventListener('blur', () => chiudi(true));
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') chiudi(true);
+          else if (e.key === 'Escape') chiudi(false);
+        });
+      });
+    }
+
+    makeSpanEditable(
+      eqMSpan,
+      () => mCorrente,
+      (num) => {
+        const minM = Number(sliderM.min);
+        const maxM = Number(sliderM.max);
+        const v = clamp(num, minM, maxM);
+        sliderM.value = v;
+        aggiornaDaMQ();
+      }
+    );
+
+    makeSpanEditable(
+      eqQSpan,
+      () => qCorrente,
+      (num) => {
+        const minQ = Number(sliderQ.min);
+        const maxQ = Number(sliderQ.max);
+        const v = clamp(num, minQ, maxQ);
+        sliderQ.value = v;
+        aggiornaDaMQ();
+      }
+    );
+
+    // -------------------------
+    // TOGGLE SEZIONI (visibilità pannelli + triangolo sul grafico)
+    // -------------------------
+    function aggiornaVisibilitaSezioni() {
+      if (boxAB) boxAB.style.display = toggleAB.checked ? '' : 'none';
+      if (boxMQ) boxMQ.style.display = toggleMQ.checked ? '' : 'none';
+      if (boxPuntiIntercette) boxPuntiIntercette.style.display = togglePuntiIntercette.checked ? '' : 'none';
+      if (boxFormule) boxFormule.style.display = toggleFormule.checked ? '' : 'none';
+      if (boxTriangolo) boxTriangolo.style.display = toggleTriangolo.checked ? '' : 'none';
+
+      const mostraTri = toggleTriangolo && toggleTriangolo.checked;
+      catetoVerticalDataset.hidden = !mostraTri;
+      catetoOrizzDataset.hidden   = !mostraTri;
+      puntoCDataset.hidden        = !mostraTri;
+
+      myChart.update();
+    }
+
+    if (toggleAB) toggleAB.addEventListener('change', aggiornaVisibilitaSezioni);
+    if (toggleMQ) toggleMQ.addEventListener('change', aggiornaVisibilitaSezioni);
+    if (togglePuntiIntercette) togglePuntiIntercette.addEventListener('change', aggiornaVisibilitaSezioni);
+    if (toggleFormule) toggleFormule.addEventListener('change', aggiornaVisibilitaSezioni);
+    if (toggleTriangolo) toggleTriangolo.addEventListener('change', aggiornaVisibilitaSezioni);
+
+    // -------------------------
+    // EVENTI
+    // -------------------------
+    [x1Input, y1Input, x2Input, y2Input].forEach(el => {
+      el.addEventListener('input', aggiornaDaPunti);
+    });
+
+    sliderX1.addEventListener('input', () => {
+      x1Input.value = sliderX1.value;
+      aggiornaDaPunti();
+    });
+
+    sliderY1.addEventListener('input', () => {
+      y1Input.value = sliderY1.value;
+      aggiornaDaPunti();
+    });
+
+    sliderX2.addEventListener('input', () => {
+      x2Input.value = sliderX2.value;
+      aggiornaDaPunti();
+    });
+
+    sliderY2.addEventListener('input', () => {
+      y2Input.value = sliderY2.value;
+      aggiornaDaPunti();
+    });
+
+    sliderM.addEventListener('input', aggiornaDaMQ);
+    sliderQ.addEventListener('input', aggiornaDaMQ);
+
+    // Intercetta Y
+    if (sliderIY) {
+      sliderIY.addEventListener('input', aggiornaDaIntercettaYUI);
+    }
+    if (sliderIX) {
+      sliderIX.addEventListener('input', () => {
+        // Per l’intercetta con l’asse y, X deve essere 0 → ritorna subito a 0
+        sliderIX.value = 0;
+      });
+    }
+
+    // Intercetta X
+    if (sliderJX) {
+      sliderJX.addEventListener('input', aggiornaDaIntercettaXUI);
+    }
+    if (sliderJY) {
+      sliderJY.addEventListener('input', () => {
+        // Per l’intercetta con l’asse x, Y deve essere 0 → ritorna subito a 0
+        sliderJY.value = 0;
+      });
+    }
+
+    // Bottoni step ▲▼ nella tabella
+    document.querySelectorAll('.step-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const cella = btn.closest('td');
+        if (!cella) return;
+        const input = cella.querySelector('input[type="number"]');
+        if (!input) return;
+
+        const step = Number(input.step) || 1;
+        let valore = Number(input.value);
+        if (isNaN(valore)) valore = 0;
+
+        if (btn.classList.contains('step-up')) valore += step;
+        else valore -= step;
+
+        const min = input.min !== '' ? Number(input.min) : -Infinity;
+        const max = input.max !== '' ? Number(input.max) : Infinity;
+        valore = Math.min(max, Math.max(min, valore));
+
+        input.value = valore;
+        aggiornaDaPunti();
+      });
+    });
+
+    // -------------------------
+    // INIZIALIZZAZIONE
+    // -------------------------
+    function init() {
+      aggiornaVisibilitaSezioni();
+      aggiornaDaPunti();
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
