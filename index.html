@@ -990,11 +990,23 @@
     }
 
     function createStructure() {
-      const templates = [
-        { left: { mono: 2, group: Math.random() < 0.4 }, right: { mono: 2, group: Math.random() < 0.4 } },
-        { left: { mono: 3, group: Math.random() < 0.3 }, right: { mono: 1, group: Math.random() < 0.5 } },
-      ];
-      return templates[Math.floor(Math.random() * templates.length)];
+      const leftMono = 2 + Math.floor(Math.random() * 2);
+      const rightMono = 1 + Math.floor(Math.random() * 3);
+
+      let leftGroups = Math.random() < 0.45 ? 1 : 0;
+      let rightGroups = Math.random() < 0.35 ? 1 : 0;
+
+      if (Math.random() < 0.2) leftGroups += 1;
+      if (Math.random() < 0.15) rightGroups += 1;
+
+      if (leftGroups + rightGroups === 0 && Math.random() < 0.6) {
+        if (Math.random() < 0.5) leftGroups = 1; else rightGroups = 1;
+      }
+
+      return {
+        left: { mono: leftMono, groups: leftGroups },
+        right: { mono: rightMono, groups: rightGroups },
+      };
     }
 
     function randomCoeff() {
@@ -1002,34 +1014,56 @@
       return choices[Math.floor(Math.random() * choices.length)];
     }
 
-    function buildSide({ mono, group }) {
+    function buildSide({ mono, groups }) {
       const result = [];
-      let xCount = 0;
-      let numCount = 0;
-      for (let i = 0; i < mono; i++) {
-        const placeX = xCount === 0 || (Math.random() < 0.5);
-        const term = { type: 'mono', num: randomCoeff(), den: 1, x: placeX };
+      let hasX = false;
+      let hasNumber = false;
+
+      const monoFlags = allocateMonoFlags(mono);
+      monoFlags.forEach(flag => {
+        const term = { type: 'mono', num: randomCoeff(), den: 1, x: flag };
+        if (flag) hasX = true; else hasNumber = true;
         result.push(term);
-        if (placeX) xCount++; else numCount++;
+      });
+
+      for (let g = 0; g < groups; g++) {
+        const groupTerm = createGroupTerm();
+        if (groupTerm.inner.some(t => t.x)) hasX = true;
+        if (groupTerm.inner.some(t => !t.x)) hasNumber = true;
+        result.push(groupTerm);
       }
-      if (group) {
-        const factor = randomCoeff();
-        const inner = [
-          { type: 'mono', num: randomCoeff(), den: 1, x: true },
-          { type: 'mono', num: randomCoeff(), den: 1, x: false },
-        ];
-        const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'g' + Math.random();
-        result.push({ type: 'group', factor: { num: factor, den: 1 }, inner, id });
-        xCount++;
-        numCount++;
-      }
-      if (xCount === 0) {
+
+      if (!hasX) {
         result.push({ type: 'mono', num: randomCoeff(), den: 1, x: true });
       }
-      if (numCount === 0) {
+      if (!hasNumber) {
         result.push({ type: 'mono', num: randomCoeff(), den: 1, x: false });
       }
       return shuffle(result);
+    }
+
+    function allocateMonoFlags(count) {
+      if (count <= 0) return [];
+      const flags = Array.from({ length: count }, () => Math.random() < 0.5);
+      if (!flags.some(Boolean)) {
+        flags[Math.floor(Math.random() * count)] = true;
+      }
+      if (flags.every(Boolean)) {
+        flags[Math.floor(Math.random() * count)] = false;
+      }
+      return shuffle(flags);
+    }
+
+    function createGroupTerm() {
+      const factor = randomCoeff();
+      const innerCount = Math.random() < 0.6 ? 2 : 3;
+      const baseFlags = innerCount === 2
+        ? [true, false]
+        : [true, false, Math.random() < 0.5];
+      const innerFlags = shuffle(baseFlags.slice(0, innerCount));
+      const inner = innerFlags.map(flag => ({ type: 'mono', num: randomCoeff(), den: 1, x: flag }));
+      const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'g' + Math.random();
+      return { type: 'group', factor: { num: factor, den: 1 }, inner, id };
     }
 
     function shuffle(arr) {
